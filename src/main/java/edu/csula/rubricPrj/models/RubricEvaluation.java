@@ -14,12 +14,10 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.OrderColumn;
 import javax.persistence.Table;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @Entity
@@ -41,19 +39,26 @@ public class RubricEvaluation implements Serializable {
     private Type type;
 
     @ManyToOne
-    @JoinColumn(name = "submission_id")
-    private RubricSubmission submission;
-
-    @ManyToOne
     @JoinColumn(name = "evaluator_id")
     private User evaluator;
-
-    @ElementCollection
-    @CollectionTable(name = "rubric_evaluation_ratings",
-        joinColumns = @JoinColumn(name = "evaluation_id") )
-    @Column(name = "rating")
-    @OrderColumn(name = "rating_order")
-    private List<Integer> ratings;
+    
+    @ManyToOne
+    @JoinColumn(name = "evaluatee_id")
+    private User evaluatee;
+    
+    @ManyToOne
+    @JoinColumn(name = "rubric_id")
+    private Rubric rubric;
+    
+    @ManyToOne
+    @JoinColumn(name = "rubrictask_id")
+    private RubricTask rubrictask;
+    
+    @ManyToMany
+    @JoinTable(name = "rubric_evaluation_ratings",
+    joinColumns = @JoinColumn(name = "evaluation_id"),
+    inverseJoinColumns = @JoinColumn(name = "rating_id"))
+    private List<Rating> ratings;
 
     private String comments;
 
@@ -62,28 +67,20 @@ public class RubricEvaluation implements Serializable {
     private boolean completed;
 
     private boolean deleted;
-
-    private static final Logger logger = LoggerFactory
-        .getLogger( RubricEvaluation.class );
+    
 
     public RubricEvaluation()
     {
-        ratings = new ArrayList<Integer>();
+        ratings = new ArrayList<Rating>();
         completed = false;
         deleted = false;
     }
 
-    public RubricEvaluation( RubricSubmission submission, User evaluator )
+    public RubricEvaluation( User evaluator )
     {
         this();
-        this.submission = submission;
         this.evaluator = evaluator;
 
-        RubricAssignment assignment = submission.getAssignment();
-        // I wish I could add nulls to the list, but ArrayList refuses to do it,
-        // so we have to add -1 instead.
-        for( int i = 0; i < assignment.getRubric().getCriterion().size(); ++i )
-            ratings.add( -1 );
     }
 
     public Double getOverallRating()
@@ -91,8 +88,8 @@ public class RubricEvaluation implements Serializable {
         if( !completed ) return null;
 
         Double overallRating = 0.0;
-        for( Integer rating : ratings )
-            overallRating += rating;
+        for( Rating rating : ratings )
+            overallRating += rating.getValue();
         overallRating /= ratings.size();
 
         return overallRating;
@@ -101,31 +98,11 @@ public class RubricEvaluation implements Serializable {
     public void setCompleted()
     {
         if( completed ) return;
-        for( int rating : ratings )
-            if( rating < 0 ) return;
+        for( Rating rating : ratings )
+            if( rating.getValue()<0 ) return;
 
         completed = true;
 
-        switch( type )
-        {
-            case INSTRUCTOR:
-                submission.incrementInstructorEvaluationCount();
-                break;
-
-            case PEER:
-                submission.incrementPeerEvaluationCount();
-                break;
-
-            case EXTERNAL:
-                submission.incrementExternalEvaluationCount();
-                break;
-
-            default:
-                // We really shouldn't get here as there should have been an
-                // exception in the constructor of RubricEvaluation if the
-                // evaluation type cannot be determined.
-                logger.warn( "Invalid rubric evaluation type." );
-        }
     }
 
     public Long getId()
@@ -148,16 +125,6 @@ public class RubricEvaluation implements Serializable {
         this.type = type;
     }
 
-    public RubricSubmission getSubmission()
-    {
-        return submission;
-    }
-
-    public void setSubmission( RubricSubmission submission )
-    {
-        this.submission = submission;
-    }
-
     public User getEvaluator()
     {
         return evaluator;
@@ -168,12 +135,28 @@ public class RubricEvaluation implements Serializable {
         this.evaluator = evaluator;
     }
 
-    public List<Integer> getRatings()
+    public User getEvaluatee() {
+		return evaluatee;
+	}
+
+	public void setEvaluatee(User evaluatee) {
+		this.evaluatee = evaluatee;
+	}
+
+	public Rubric getRubric() {
+		return rubric;
+	}
+
+	public void setRubric(Rubric rubric) {
+		this.rubric = rubric;
+	}
+
+	public List<Rating> getRatings()
     {
         return ratings;
     }
 
-    public void setRatings( List<Integer> ratings )
+    public void setRatings( List<Rating> ratings )
     {
         this.ratings = ratings;
     }
@@ -217,5 +200,13 @@ public class RubricEvaluation implements Serializable {
     {
         this.deleted = deleted;
     }
+
+	public RubricTask getRubrictask() {
+		return rubrictask;
+	}
+
+	public void setRubrictask(RubricTask rubrictask) {
+		this.rubrictask = rubrictask;
+	}
 
 }
