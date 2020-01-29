@@ -5,7 +5,7 @@
         http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
   version="2.1">
 
-  <persistence-unit name="rubricPrj">
+  <persistence-unit name="rubrics">
     <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
     <properties>
       <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL8Dialect" />

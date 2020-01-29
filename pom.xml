@@ -10,9 +10,8 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>edu.csula</groupId>
-	<artifactId>rubricPrj</artifactId>
+	<artifactId>rubrics</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>rubricPrj</name>
 	<description>A rubric system</description>
 
 	<properties>
@@ -55,4 +54,5 @@
 		</plugins>
 	</build>
 
+	<name>rubrics</name>
 </project>
