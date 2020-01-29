@@ -1,22 +1,19 @@
-package edu.csula.rubricPrj.models;
+package edu.csula.rubrics.models;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
-import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "rubric_criterion")
-public class Criteria implements Serializable {
+@Table(name = "criteria")
+public class Criterion implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -27,23 +24,23 @@ public class Criteria implements Serializable {
     @Column(nullable = false)
     private String description;
 
-    /* Each criteria has a number of ratings. */
-    @OneToMany(mappedBy="criteria")
+    /* Each criterion has a number of ratings. */
+    @OneToMany(mappedBy="criterion")
     private List<Rating> ratings;
 
-    public Criteria()
+    public Criterion()
     {
     	ratings = new ArrayList<Rating>();
     }
 
-    public Criteria clone()
+    public Criterion clone()
     {
-    	Criteria newCriteria = new Criteria();
-        newCriteria.description = description;
+    	Criterion newCriterion = new Criterion();
+        newCriterion.description = description;
         for( Rating rating : ratings )
-            newCriteria.ratings.add( rating.clone() );
+            newCriterion.ratings.add( rating.clone() );
 
-        return newCriteria;
+        return newCriterion;
     }
 
     public Long getId()
@@ -73,7 +70,5 @@ public class Criteria implements Serializable {
 	public void setRatings(List<Rating> ratings) {
 		this.ratings = ratings;
 	}
-
-    
 
 }

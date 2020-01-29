@@ -1,4 +1,4 @@
-package edu.csula.rubricPrj;
+package edu.csula.rubrics;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

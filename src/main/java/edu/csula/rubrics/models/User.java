@@ -1,4 +1,4 @@
-package edu.csula.rubricPrj.models;
+package edu.csula.rubrics.models;
 
 import java.io.Serializable;
 

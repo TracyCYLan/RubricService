@@ -1,4 +1,4 @@
-package edu.csula.rubricPrj.util;
+package edu.csula.rubrics.util;
 
 
 import java.io.BufferedWriter;

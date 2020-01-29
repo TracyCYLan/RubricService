@@ -1,4 +1,4 @@
-package edu.csula.rubricPrj.models;
+package edu.csula.rubrics.models;
 
 import java.io.Serializable;
 
@@ -11,7 +11,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "rubric_ratings")
+@Table(name = "ratings")
 public class Rating implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -27,8 +27,8 @@ public class Rating implements Serializable {
     private double value;
     
     @ManyToOne
-    @JoinColumn(name = "criteria_id")
-    private Criteria criteria;
+    @JoinColumn(name = "criterion_id")
+    private Criterion criterion;
     
     public Rating() {
     	
@@ -65,13 +65,15 @@ public class Rating implements Serializable {
 		this.value = value;
 	}
 
-	public Criteria getCriteria() {
-		return criteria;
+	public Criterion getCriterion() {
+		return criterion;
 	}
 
-	public void setCriteria(Criteria criteria) {
-		this.criteria = criteria;
+	public void setCriterion(Criterion criterion) {
+		this.criterion = criterion;
 	}
+
+	
 	
     
 }
