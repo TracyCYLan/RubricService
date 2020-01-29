@@ -1,4 +1,4 @@
-package edu.csula.rubricPrj.models;
+package edu.csula.rubrics.models;
 
 
 import java.io.Serializable;
@@ -32,16 +32,16 @@ public class Rubric implements Serializable {
 
     private String description;
 
-    /* Each rubric has a number of criterion. 
-     * Each criteria can be reused by different rubrics.
+    /* Each rubric has a number of criteria. 
+     * Each criterion can be reused by different rubrics.
      * */
     @ManyToMany(cascade = { CascadeType.MERGE, CascadeType.PERSIST })
     @JoinTable(
-    	    name = "rubrics_criterion_matching",
+    	    name = "rubric_crtieria",
     	    joinColumns=@JoinColumn(name = "rubric_id"),
-    	    inverseJoinColumns=@JoinColumn(name="criteria_id")
+    	    inverseJoinColumns=@JoinColumn(name="criterion_id")
     	)
-    private List<Criteria> criterion;
+    private List<Criterion> criteria;
 
 
     @ManyToOne
@@ -62,7 +62,7 @@ public class Rubric implements Serializable {
     {
         isPublic = false;
         deleted = false;
-        criterion = new ArrayList<Criteria>();
+        criteria = new ArrayList<Criterion>();
     }
 
     public Rubric clone()
@@ -71,8 +71,8 @@ public class Rubric implements Serializable {
         newRubric.name = "Copy of " + name;
         newRubric.description = description;
 
-        for( Criteria criteria : criterion )
-            newRubric.criterion.add( criteria.clone() );
+        for( Criterion criterion : criteria )
+            newRubric.criteria.add( criterion.clone() );
 
         return newRubric;
     }
@@ -113,12 +113,12 @@ public class Rubric implements Serializable {
         this.description = description;
     }
 
-    public List<Criteria> getCriterion() {
-		return criterion;
+	public List<Criterion> getCriteria() {
+		return criteria;
 	}
 
-	public void setCriterion(List<Criteria> criterion) {
-		this.criterion = criterion;
+	public void setCriteria(List<Criterion> criteria) {
+		this.criteria = criteria;
 	}
 
 	public User getCreator()

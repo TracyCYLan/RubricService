@@ -1,4 +1,4 @@
-package edu.csula.rubricPrj.models;
+package edu.csula.rubrics.models;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -17,8 +17,8 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "rubric_tasks")
-public class RubricTask implements Serializable {
+@Table(name = "tasks")
+public class Task implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -48,10 +48,10 @@ public class RubricTask implements Serializable {
     @Column(name = "due_date")
     private Calendar dueDate;
     
-    @OneToMany(mappedBy="rubrictask")
-    private List<RubricEvaluation> evaluations;
+    @OneToMany(mappedBy="task")
+    private List<Evaluation> evaluations;
     
-    public RubricTask()
+    public Task()
     {
     	dueDate = Calendar.getInstance();
         dueDate.add( Calendar.DATE, 7 );
@@ -59,7 +59,7 @@ public class RubricTask implements Serializable {
         dueDate.set( Calendar.MINUTE, 59 );
         dueDate.set( Calendar.SECOND, 59 );
         dueDate.set( Calendar.MILLISECOND, 0 );
-        evaluations = new ArrayList<RubricEvaluation>();
+        evaluations = new ArrayList<Evaluation>();
     }
 
 	public Long getId() {
@@ -102,15 +102,15 @@ public class RubricTask implements Serializable {
 		this.rubric = rubric;
 	}
 
-	public List<RubricEvaluation> getEvaluations() {
+    public List<Evaluation> getEvaluations() {
 		return evaluations;
 	}
 
-	public void setEvaluations(List<RubricEvaluation> evaluations) {
+	public void setEvaluations(List<Evaluation> evaluations) {
 		this.evaluations = evaluations;
 	}
-    
-    public Calendar getDueDate()
+
+	public Calendar getDueDate()
     {
         return dueDate;
     }

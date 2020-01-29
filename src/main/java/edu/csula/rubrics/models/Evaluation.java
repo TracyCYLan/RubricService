@@ -1,16 +1,11 @@
-package edu.csula.rubricPrj.models;
+package edu.csula.rubrics.models;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
@@ -21,22 +16,14 @@ import javax.persistence.Table;
 
 
 @Entity
-@Table(name = "rubric_evaluations")
-public class RubricEvaluation implements Serializable {
+@Table(name = "evaluations")
+public class Evaluation implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
-    public enum Type {
-        INSTRUCTOR, PEER, EXTERNAL
-    };
 
     @Id
     @GeneratedValue
     private Long id;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Type type;
 
     @ManyToOne
     @JoinColumn(name = "evaluator_id")
@@ -51,11 +38,11 @@ public class RubricEvaluation implements Serializable {
     private Rubric rubric;
     
     @ManyToOne
-    @JoinColumn(name = "rubrictask_id")
-    private RubricTask rubrictask;
+    @JoinColumn(name = "task_id")
+    private Task task;
     
     @ManyToMany
-    @JoinTable(name = "rubric_evaluation_ratings",
+    @JoinTable(name = "evaluation_ratings",
     joinColumns = @JoinColumn(name = "evaluation_id"),
     inverseJoinColumns = @JoinColumn(name = "rating_id"))
     private List<Rating> ratings;
@@ -69,14 +56,14 @@ public class RubricEvaluation implements Serializable {
     private boolean deleted;
     
 
-    public RubricEvaluation()
+    public Evaluation()
     {
         ratings = new ArrayList<Rating>();
         completed = false;
         deleted = false;
     }
 
-    public RubricEvaluation( User evaluator )
+    public Evaluation( User evaluator )
     {
         this();
         this.evaluator = evaluator;
@@ -113,16 +100,6 @@ public class RubricEvaluation implements Serializable {
     public void setId( Long id )
     {
         this.id = id;
-    }
-
-    public Type getType()
-    {
-        return type;
-    }
-
-    public void setType( Type type )
-    {
-        this.type = type;
     }
 
     public User getEvaluator()
@@ -201,12 +178,13 @@ public class RubricEvaluation implements Serializable {
         this.deleted = deleted;
     }
 
-	public RubricTask getRubrictask() {
-		return rubrictask;
+	public Task getTask() {
+		return task;
 	}
 
-	public void setRubrictask(RubricTask rubrictask) {
-		this.rubrictask = rubrictask;
+	public void setTask(Task task) {
+		this.task = task;
 	}
+
 
 }
