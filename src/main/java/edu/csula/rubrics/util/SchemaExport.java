@@ -21,7 +21,7 @@ public class SchemaExport {
     Map<String, Object> properties = new HashMap<>();
     properties.put("javax.persistence.schema-generation.scripts.action", "create");
     properties.put("javax.persistence.schema-generation.scripts.create-target", stringWriter);
-    Persistence.generateSchema("rubricPrj", properties);
+    Persistence.generateSchema("rubrics", properties);
 
     // If there is a command line argument, consider it the output file name
     BufferedWriter out = null;
