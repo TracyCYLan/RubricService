@@ -1,1 +1,1 @@
-# Rubric-Service
+# RubricService
