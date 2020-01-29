@@ -14,33 +14,15 @@
 
     insert into hibernate_sequence values ( 1 );
 
-    insert into hibernate_sequence values ( 1 );
-
-    create table rubric_assignments (
-       id bigint not null,
-        deleted bit not null,
-        due_date datetime(6),
-        evaluated_by_instructors bit not null,
-        evaluated_by_students bit not null,
-        name varchar(255) not null,
-        publish_date datetime(6),
-        rubric_id bigint not null,
-        primary key (id)
-    ) engine=InnoDB;
-
     create table rubric_criterion (
        id bigint not null,
         description varchar(255) not null,
-        rubric_id bigint,
-        criteria_index integer,
         primary key (id)
     ) engine=InnoDB;
 
     create table rubric_evaluation_ratings (
        evaluation_id bigint not null,
-        rating integer,
-        rating_order integer not null,
-        primary key (evaluation_id, rating_order)
+        rating_id bigint not null
     ) engine=InnoDB;
 
     create table rubric_evaluations (
@@ -50,32 +32,28 @@
         date datetime(6),
         deleted bit not null,
         type varchar(255) not null,
+        evaluatee_id bigint,
         evaluator_id bigint,
-        submission_id bigint,
+        rubric_id bigint,
+        rubrictask_id bigint,
         primary key (id)
-    ) engine=InnoDB;
-
-    create table rubric_external_evaluators (
-       rubric_assignment_id bigint not null,
-        evaluator_id bigint not null
     ) engine=InnoDB;
 
     create table rubric_ratings (
        id bigint not null,
         description varchar(255) not null,
-        value integer not null,
+        value double precision not null,
         criteria_id bigint,
-        rating_index integer,
         primary key (id)
     ) engine=InnoDB;
 
-    create table rubric_submissions (
+    create table rubric_tasks (
        id bigint not null,
-        external_evaluation_count integer not null,
-        instructor_evaluation_count integer not null,
-        peer_evaluation_count integer not null,
-        assignment_id bigint not null,
-        student_id bigint not null,
+        due_date datetime(6),
+        name varchar(255) not null,
+        type varchar(255) not null,
+        evaluator_id bigint,
+        rubric_id bigint,
         primary key (id)
     ) engine=InnoDB;
 
@@ -87,9 +65,13 @@
         name varchar(255) not null,
         obsolete bit not null,
         publish_date datetime(6),
-        scale integer not null,
         creator_id bigint,
         primary key (id)
+    ) engine=InnoDB;
+
+    create table rubrics_criterion_matching (
+       rubric_id bigint not null,
+        criteria_id bigint not null
     ) engine=InnoDB;
 
     create table users (
@@ -109,15 +91,10 @@
     alter table users 
        add constraint UK_r43af9ap4edm43mmtq01oddj6 unique (username);
 
-    alter table rubric_assignments 
-       add constraint FKi1pdm5ajau8x5ts6bph5n0yge 
-       foreign key (rubric_id) 
-       references rubrics (id);
-
-    alter table rubric_criterion 
-       add constraint FKtiynkjsufk5adqn94r9wanjxu 
-       foreign key (rubric_id) 
-       references rubrics (id);
+    alter table rubric_evaluation_ratings 
+       add constraint FKkq0n99a3nmwq94nm3tkft5fq5 
+       foreign key (rating_id) 
+       references rubric_ratings (id);
 
     alter table rubric_evaluation_ratings 
        add constraint FKrq7757pel1j60wsybip93ue65 
@@ -125,41 +102,51 @@
        references rubric_evaluations (id);
 
     alter table rubric_evaluations 
+       add constraint FKgoepd7osu38mniewshw9eac8u 
+       foreign key (evaluatee_id) 
+       references users (id);
+
+    alter table rubric_evaluations 
        add constraint FK9giivdwhme78nsi10jsgen5dt 
        foreign key (evaluator_id) 
        references users (id);
 
     alter table rubric_evaluations 
-       add constraint FKcxlrpkjqjwv3i3g3hmvisq5sa 
-       foreign key (submission_id) 
-       references rubric_submissions (id);
+       add constraint FKexc69etdcc5wyjpqtey3uks1e 
+       foreign key (rubric_id) 
+       references rubrics (id);
 
-    alter table rubric_external_evaluators 
-       add constraint FKtqyrcwaodlheaa2nols9x7ljv 
-       foreign key (evaluator_id) 
-       references users (id);
-
-    alter table rubric_external_evaluators 
-       add constraint FKh0dwcirgh3mcegenpj5sjqhh0 
-       foreign key (rubric_assignment_id) 
-       references rubric_assignments (id);
+    alter table rubric_evaluations 
+       add constraint FKf8x5ng4ct54evaiy3g5qqr5we 
+       foreign key (rubrictask_id) 
+       references rubric_tasks (id);
 
     alter table rubric_ratings 
        add constraint FK1irogjrcesxohs6uxe1tyj94u 
        foreign key (criteria_id) 
        references rubric_criterion (id);
 
-    alter table rubric_submissions 
-       add constraint FKhou4jjkrtstqhtlehmr4hm5yw 
-       foreign key (assignment_id) 
-       references rubric_assignments (id);
-
-    alter table rubric_submissions 
-       add constraint FK6xlypr4gf91159bsho1conkuy 
-       foreign key (student_id) 
+    alter table rubric_tasks 
+       add constraint FKt0acomxt9ygh5vkbuk4ob5hek 
+       foreign key (evaluator_id) 
        references users (id);
+
+    alter table rubric_tasks 
+       add constraint FKmp59bvm7f1dylpab88pgbhenk 
+       foreign key (rubric_id) 
+       references rubrics (id);
 
     alter table rubrics 
        add constraint FK2w3xneoptjuj9tdmjbmt09rr6 
        foreign key (creator_id) 
        references users (id);
+
+    alter table rubrics_criterion_matching 
+       add constraint FKsrrs2lhuwost7s96uwy1cbpno 
+       foreign key (criteria_id) 
+       references rubric_criterion (id);
+
+    alter table rubrics_criterion_matching 
+       add constraint FK5457gung2rrhueiq7vm4bjwvl 
+       foreign key (rubric_id) 
+       references rubrics (id);

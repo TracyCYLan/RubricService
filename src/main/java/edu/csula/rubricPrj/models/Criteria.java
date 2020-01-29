@@ -28,9 +28,7 @@ public class Criteria implements Serializable {
     private String description;
 
     /* Each criteria has a number of ratings. */
-    @OneToMany(cascade = { CascadeType.MERGE, CascadeType.PERSIST })
-    @JoinColumn(name = "criteria_id")
-    @OrderColumn(name = "rating_index")
+    @OneToMany(mappedBy="criteria")
     private List<Rating> ratings;
 
     public Criteria()

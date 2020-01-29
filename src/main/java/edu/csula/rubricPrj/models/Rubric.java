@@ -12,9 +12,9 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 
 @Entity
@@ -32,13 +32,15 @@ public class Rubric implements Serializable {
 
     private String description;
 
-    @Column(name = "scale", nullable = false)
-    private int scale;
-
-    /* Each rubric has a number of criterion. */
-    @OneToMany(cascade = { CascadeType.MERGE, CascadeType.PERSIST })
-    @JoinColumn(name = "rubric_id")
-    @OrderColumn(name = "criteria_index")
+    /* Each rubric has a number of criterion. 
+     * Each criteria can be reused by different rubrics.
+     * */
+    @ManyToMany(cascade = { CascadeType.MERGE, CascadeType.PERSIST })
+    @JoinTable(
+    	    name = "rubrics_criterion_matching",
+    	    joinColumns=@JoinColumn(name = "rubric_id"),
+    	    inverseJoinColumns=@JoinColumn(name="criteria_id")
+    	)
     private List<Criteria> criterion;
 
 
@@ -58,7 +60,6 @@ public class Rubric implements Serializable {
 
     public Rubric()
     {
-        scale = 5;
         isPublic = false;
         deleted = false;
         criterion = new ArrayList<Criteria>();
@@ -69,7 +70,6 @@ public class Rubric implements Serializable {
         Rubric newRubric = new Rubric();
         newRubric.name = "Copy of " + name;
         newRubric.description = description;
-        newRubric.scale = scale;
 
         for( Criteria criteria : criterion )
             newRubric.criterion.add( criteria.clone() );
@@ -111,16 +111,6 @@ public class Rubric implements Serializable {
     public void setDescription( String description )
     {
         this.description = description;
-    }
-
-    public int getScale()
-    {
-        return scale;
-    }
-
-    public void setScale( int scale )
-    {
-        this.scale = scale;
     }
 
     public List<Criteria> getCriterion() {
