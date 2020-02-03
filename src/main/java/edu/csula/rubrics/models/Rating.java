@@ -10,6 +10,8 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "ratings")
 public class Rating implements Serializable {
@@ -26,6 +28,7 @@ public class Rating implements Serializable {
     @Column(name = "value", nullable = false)
     private double value;
     
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "criterion_id")
     private Criterion criterion;
