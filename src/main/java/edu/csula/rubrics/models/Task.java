@@ -16,6 +16,8 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "tasks")
 public class Task implements Serializable {
@@ -48,6 +50,7 @@ public class Task implements Serializable {
     @Column(name = "due_date")
     private Calendar dueDate;
     
+    @JsonIgnore
     @OneToMany(mappedBy="task")
     private List<Evaluation> evaluations;
     

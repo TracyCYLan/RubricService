@@ -14,6 +14,8 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 @Entity
 @Table(name = "evaluations")
@@ -37,6 +39,7 @@ public class Evaluation implements Serializable {
     @JoinColumn(name = "rubric_id")
     private Rubric rubric;
     
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "task_id")
     private Task task;
