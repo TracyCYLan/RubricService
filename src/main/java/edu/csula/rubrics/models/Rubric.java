@@ -32,7 +32,8 @@ public class Rubric implements Serializable {
 
     private String description;
 
-    /* Each rubric has a number of criteria. 
+    /* 
+     * Each rubric has a number of criteria. 
      * Each criterion can be reused by different rubrics.
      * */
     @ManyToMany(cascade = { CascadeType.MERGE, CascadeType.PERSIST })
