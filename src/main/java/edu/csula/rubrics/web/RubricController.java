@@ -26,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Rubric;
+import edu.csula.rubrics.models.Tag;
 import edu.csula.rubrics.models.dao.CriterionDao;
 import edu.csula.rubrics.models.dao.RubricDao;
 
@@ -158,12 +159,22 @@ public class RubricController {
 	@PatchMapping("/criterion/{id}")
 	public void editCriterion(@PathVariable Long id, @RequestBody Map<String, Object> update) {
 		Criterion criterion = criterionDao.getCriterion(id);
+		//empty ratings and tags
 		List<Rating> ratings = criterion.getRatings();
 		while(ratings.size()>0)
 		{
 			Rating r = ratings.get(0);
 			r.setCriterion(null);
 			ratings.remove(0);
+		}
+		List<Tag> tags = criterion.getTags();
+		while(tags.size()>0)
+		{
+			Tag tag = tags.get(0);
+			int count = tag.getCount();
+			if(count>0)
+				tag.setCount(count-1);
+			tags.remove(0);
 		}
 		for (String key : update.keySet()) {
 			switch (key) {
@@ -216,4 +227,26 @@ public class RubricController {
 		return criteria;
 	}
 
+	//add Tag on Criterion
+	@PostMapping("/criterion/{id}/tag")
+	@ResponseStatus(HttpStatus.CREATED)
+	public Long addTagOfCriterion(@PathVariable long id, @RequestBody Tag tag) {
+		Criterion criterion = getCriterion(id);
+		//first see if tag exists in the table already
+		long tagId = criterionDao.findTag(tag.getName());
+		if(tagId<0) //create a new tag
+		{
+			tag = criterionDao.saveTag(tag);
+		}
+		else //fetch the existing tag from db
+		{
+			tag = criterionDao.getTag(tagId);
+		}
+		tag.setCount(tag.getCount()+1);
+		// then add this tag under certain criterion
+		List<Tag> tags = criterion.getTags();
+		tags.add(tag);
+		criterionDao.saveCriterion(criterion);
+		return tag.getId();
+	}
 }
