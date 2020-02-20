@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.Rating;
-import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.dao.CriterionDao;
 @Repository
 public class CriterionDaoImpl implements CriterionDao{
@@ -33,7 +32,7 @@ public class CriterionDaoImpl implements CriterionDao{
 	//get all criteria in the db
 	@Override
 	public List<Criterion> getAllCriteria() {
-		return entityManager.createQuery("from Criterion", Criterion.class)
+		return entityManager.createQuery("from Criterion where deleted = false", Criterion.class)
                 .getResultList();
 	}
 
@@ -57,5 +56,16 @@ public class CriterionDaoImpl implements CriterionDao{
             .setParameter( "criterion", criterion )
             .getResultList();
 	}
+	
+	//search
+    @Override
+    public List<Criterion> searchCriteria( String text )
+    {
+    	String query = "from Criterion where name like :text or description like :text and deleted = false";
+
+        return entityManager.createQuery( query, Criterion.class )
+            .setParameter( "text", "%"+text+"%" )
+            .getResultList();
+    }
 
 }

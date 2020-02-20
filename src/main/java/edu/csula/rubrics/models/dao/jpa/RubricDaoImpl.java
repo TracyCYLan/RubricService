@@ -8,6 +8,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.csula.rubrics.models.Rubric;
@@ -54,12 +55,13 @@ public class RubricDaoImpl implements RubricDao {
     }
 
     @Override
-    public List<Rubric> searchRubrics( String text, int maxResults )
+    public List<Rubric> searchRubrics( String input )
     {
-        TypedQuery<Rubric> query = entityManager
-            .createNamedQuery( "rubric.search", Rubric.class );
-        if( maxResults > 0 ) query.setMaxResults( maxResults );
-        return query.setParameter( "text", text ).getResultList();
+    	String query = "from Rubric where name like :text or description like :text and deleted = false";
+
+            return entityManager.createQuery( query, Rubric.class )
+                .setParameter( "text", "%"+input+"%" )
+                .getResultList();
     }
 
     //create a new rubric
@@ -72,7 +74,7 @@ public class RubricDaoImpl implements RubricDao {
 
 	@Override
 	public List<Rubric> getAllRubrics() {
-		 return entityManager.createQuery("from Rubric", Rubric.class)
+		 return entityManager.createQuery("from Rubric where deleted = false", Rubric.class)
 	                .getResultList();
 	}
 
