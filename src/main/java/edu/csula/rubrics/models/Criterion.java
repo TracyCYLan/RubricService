@@ -2,66 +2,99 @@ package edu.csula.rubrics.models;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
 
 @Entity
 @Table(name = "criteria")
 public class Criterion implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    @Id
-    @GeneratedValue
-    private Long id;
+	@Id
+	@GeneratedValue
+	private Long id;
 
-    @Column(nullable = false)
-    private String description;
+	@Column(nullable = false)
+	private String name;
 
-    /* Each criterion has a number of ratings. */
-    @OneToMany(mappedBy="criterion")
-    private List<Rating> ratings;
+	@Column(nullable = false)
+	private String description;
 
-    public Criterion()
-    {
-    	ratings = new ArrayList<Rating>();
-    }
+	private boolean deleted;
 
-    public Criterion clone()
-    {
-    	Criterion newCriterion = new Criterion();
-        newCriterion.description = description;
-        for( Rating rating : ratings )
-            newCriterion.ratings.add( rating.clone() );
+	/* Each criterion has a number of ratings. */
+	@OneToMany(mappedBy = "criterion")
+	@OrderBy("value desc")
+	private List<Rating> ratings;
 
-        return newCriterion;
-    }
+	@ManyToMany
+	@JoinTable(name = "criterion_tags", joinColumns = @JoinColumn(name = "criterion_id"), inverseJoinColumns = @JoinColumn(name = "tag_id"))
+	private List<Tag> tags;
 
-    public Long getId()
-    {
-        return id;
-    }
+	@Column(name = "publish_date")
+	private Calendar publishDate;
 
-    public void setId( Long id )
-    {
-        this.id = id;
-    }
+	public Criterion() {
+		ratings = new ArrayList<Rating>();
+		tags = new ArrayList<Tag>();
+	}
 
-    public String getDescription()
-    {
-        return description;
-    }
+	public Criterion clone() {
+		Criterion newCriterion = new Criterion();
+		newCriterion.description = description;
+		for (Rating rating : ratings)
+			newCriterion.ratings.add(rating.clone());
 
-    public void setDescription( String description )
-    {
-        this.description = description;
-    }
+		return newCriterion;
+	}
+
+	public boolean isPublished() {
+		return publishDate != null && Calendar.getInstance().after(publishDate);
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public boolean isDeleted() {
+		return deleted;
+	}
+
+	public void setDeleted(boolean deleted) {
+		this.deleted = deleted;
+	}
 
 	public List<Rating> getRatings() {
 		return ratings;
@@ -69,6 +102,22 @@ public class Criterion implements Serializable {
 
 	public void setRatings(List<Rating> ratings) {
 		this.ratings = ratings;
+	}
+
+	public List<Tag> getTags() {
+		return tags;
+	}
+
+	public void setTags(List<Tag> tags) {
+		this.tags = tags;
+	}
+
+	public Calendar getPublishDate() {
+		return publishDate;
+	}
+
+	public void setPublishDate(Calendar publishDate) {
+		this.publishDate = publishDate;
 	}
 
 }

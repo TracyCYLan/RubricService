@@ -14,7 +14,7 @@ public interface RubricDao {
 
     List<Rubric> getPublishedPersonalRubrics( User creator );
 
-    List<Rubric> searchRubrics( String text, int maxResults );
+    List<Rubric> searchRubrics( String text );
 
     Rubric saveRubric( Rubric rubric );
 

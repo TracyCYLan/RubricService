@@ -19,4 +19,6 @@ public interface CriterionDao {
 	  Rating saveRating(Rating rating);
 	  
 	  List<Rating> getRatings(Criterion criterion);
+	  
+	  List<Criterion> searchCriteria( String text );
 }
