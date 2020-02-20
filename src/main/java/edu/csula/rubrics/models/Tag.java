@@ -12,21 +12,21 @@ import javax.persistence.Table;
 @Table(name = "tags")
 public class Tag implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-    
-    @Id
-    @GeneratedValue
-    private Long id;
-    
-    @Column(nullable = false)
-    private String name;
-    
-    @Column(nullable = false)
-    private int count;
-    
-    public Tag() {
-    	count=0;
-    }
+	private static final long serialVersionUID = 1L;
+
+	@Id
+	@GeneratedValue
+	private Long id;
+
+	@Column(nullable = false)
+	private String name;
+
+	@Column(nullable = false)
+	private int count;
+
+	public Tag() {
+		count = 0;
+	}
 
 	public Long getId() {
 		return id;
@@ -51,5 +51,5 @@ public class Tag implements Serializable {
 	public void setCount(int count) {
 		this.count = count;
 	}
-    
+
 }
