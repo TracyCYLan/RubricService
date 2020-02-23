@@ -231,6 +231,8 @@ public class RubricController {
 	@PostMapping("/criterion/{id}/tag")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long addTagOfCriterion(@PathVariable long id, @RequestBody Tag tag) {
+		if(tag.getName()==null||tag.getName().length()==0)
+			return (long)-1;
 		Criterion criterion = getCriterion(id);
 		//first see if tag exists in the table already
 		long tagId = criterionDao.findTag(tag.getName());
@@ -248,5 +250,11 @@ public class RubricController {
 		tags.add(tag);
 		criterionDao.saveCriterion(criterion);
 		return tag.getId();
+	}
+	
+	// get ALL tags
+	@GetMapping("/criterion/tag")
+	public List<Tag> getTags() {
+		return criterionDao.getAllTags();
 	}
 }

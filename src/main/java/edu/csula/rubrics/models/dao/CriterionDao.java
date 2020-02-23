@@ -28,4 +28,6 @@ public interface CriterionDao {
 	  Tag saveTag(Tag tag);
 	  
 	  Long findTag(String name);
+	  
+	  List<Tag> getAllTags();
 }
