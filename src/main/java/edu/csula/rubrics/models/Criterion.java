@@ -16,13 +16,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
 
-import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
-import org.springframework.data.elasticsearch.annotations.Setting;
 
-//@Document(indexName = "criteria")
-//@Setting(settingPath = "es-config/elastic-analyzer.json")
 @Entity
 @Table(name = "criteria")
 public class Criterion implements Serializable {
@@ -33,7 +27,6 @@ public class Criterion implements Serializable {
 	@GeneratedValue
 	private Long id;
 
-//	@Field(type = FieldType.Text, analyzer = "autocomplete_index", searchAnalyzer = "autocomplete_search")
 	@Column(nullable = false)
 	private String name;
 

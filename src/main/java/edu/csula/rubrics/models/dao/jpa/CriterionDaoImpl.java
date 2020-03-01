@@ -8,15 +8,12 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
-import org.elasticsearch.index.query.MatchQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.csula.rubrics.models.Criterion;
-import edu.csula.rubrics.models.CriterionRepository;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Tag;
 import edu.csula.rubrics.models.dao.CriterionDao;
@@ -28,8 +25,6 @@ public class CriterionDaoImpl implements CriterionDao {
 	@PersistenceContext
 	private EntityManager entityManager;
 
-//    @Autowired
-//    private CriterionRepository criterionRepository;
     
 	@Override
 	public Criterion getCriterion(Long id) {
@@ -70,18 +65,16 @@ public class CriterionDaoImpl implements CriterionDao {
 	// search
 	@Override
 	public List<Criterion> searchCriteria(String text) {
-		Query query = entityManager.createNativeQuery("select * FROM criteria "
-				+ "WHERE MATCH(name,description) AGAINST(:text IN NATURAL LANGUAGE MODE) " 
-				+ "AND deleted = false", Criterion.class);
-		query.setParameter("text", text);
-		Iterator iterator = query.getResultList().iterator();
-		List<Criterion> result = new ArrayList<>();
-		while (iterator.hasNext()) {
-			result.add((Criterion) iterator.next());
-		}
-		return result;
-//		MatchQueryBuilder searchByName = QueryBuilders.matchQuery("name", text);
-//        return this.criterionRepository.search(searchByName);
+		if(text==null||text.trim().length()==0)
+			return null;
+		text = text.trim();
+		String query = "select * FROM criteria "
+				+ "WHERE MATCH(name,description) AGAINST(:text IN BOOLEAN MODE) " 
+				+ "AND deleted = false";
+		text = text.replace(" ", "*");
+		return entityManager.createNativeQuery(query, Criterion.class)
+	    .setParameter("text", text+"*").getResultList();
+
 	}
 
 	@Override
