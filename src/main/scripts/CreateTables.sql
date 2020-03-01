@@ -1,7 +1,16 @@
-    create table criteria (
+create table criteria (
        id bigint not null,
+        deleted bit not null,
         description varchar(255) not null,
+        name varchar(255) not null,
+        publish_date datetime(6),
+        FULLTEXT(name,description),
         primary key (id)
+    ) engine=InnoDB;
+
+    create table criterion_tags (
+       criterion_id bigint not null,
+        tag_id bigint not null
     ) engine=InnoDB;
 
     create table evaluation_ratings (
@@ -25,6 +34,8 @@
     create table hibernate_sequence (
        next_val bigint
     ) engine=InnoDB;
+
+    insert into hibernate_sequence values ( 1 );
 
     insert into hibernate_sequence values ( 1 );
 
@@ -63,6 +74,13 @@
         primary key (id)
     ) engine=InnoDB;
 
+    create table tags (
+       id bigint not null,
+        count integer not null,
+        name varchar(255) not null,
+        primary key (id)
+    ) engine=InnoDB;
+
     create table tasks (
        id bigint not null,
         due_date datetime(6),
@@ -89,6 +107,16 @@
 
     alter table users 
        add constraint UK_r43af9ap4edm43mmtq01oddj6 unique (username);
+
+    alter table criterion_tags 
+       add constraint FKi7hmj6w4cwfju9raklytid47o 
+       foreign key (tag_id) 
+       references tags (id);
+
+    alter table criterion_tags 
+       add constraint FK60113r10ymtj1i21yop0mijdl 
+       foreign key (criterion_id) 
+       references criteria (id);
 
     alter table evaluation_ratings 
        add constraint FKr7pgea1xxloknvvx64dkwdbji 
