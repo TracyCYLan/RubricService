@@ -68,9 +68,15 @@ public class CriterionDaoImpl implements CriterionDao {
 		if(text==null||text.trim().length()==0)
 			return null;
 		text = text.trim();
-		String query = "select * FROM criteria "
-				+ "WHERE MATCH(name,description) AGAINST(:text IN BOOLEAN MODE) " 
-				+ "AND deleted = false";
+		String query = "select c.* from criteria c " + 
+				"inner join ratings r on r.criterion_id = c.id " + 
+				"inner join criterion_tags ct on ct.criterion_id = c.id " + 
+				"inner join tags t on t.id = ct.tag_id " + 
+				"where match(c.name,c.description) against(:text in boolean mode) " + 
+				"or match(t.name) against(:text IN BOOLEAN MODE) " + 
+				"or match(r.description) against (:text IN BOOLEAN MODE) " + 
+				"and c.deleted = false \r\n" + 
+				"group by c.id";
 		text = text.replace(" ", "*");
 		return entityManager.createNativeQuery(query, Criterion.class)
 	    .setParameter("text", text+"*").getResultList();
