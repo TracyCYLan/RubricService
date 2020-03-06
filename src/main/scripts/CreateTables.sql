@@ -54,6 +54,7 @@ create table criteria (
         description varchar(255) not null,
         value double precision not null,
         criterion_id bigint,
+        FULLTEXT(description),
         primary key (id)
     ) engine=InnoDB;
 
@@ -78,6 +79,7 @@ create table criteria (
        id bigint not null,
         count integer not null,
         name varchar(255) not null,
+        FULLTEXT(name),
         primary key (id)
     ) engine=InnoDB;
 

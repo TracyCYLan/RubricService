@@ -1,7 +1,9 @@
 package edu.csula.rubrics.web;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -159,21 +161,19 @@ public class RubricController {
 	@PatchMapping("/criterion/{id}")
 	public void editCriterion(@PathVariable Long id, @RequestBody Map<String, Object> update) {
 		Criterion criterion = criterionDao.getCriterion(id);
-		//empty ratings and tags
+		// empty ratings and tags
 		List<Rating> ratings = criterion.getRatings();
-		while(ratings.size()>0)
-		{
+		while (ratings.size() > 0) {
 			Rating r = ratings.get(0);
 			r.setCriterion(null);
 			ratings.remove(0);
 		}
 		List<Tag> tags = criterion.getTags();
-		while(tags.size()>0)
-		{
+		while (tags.size() > 0) {
 			Tag tag = tags.get(0);
 			int count = tag.getCount();
-			if(count>0)
-				tag.setCount(count-1);
+			if (count > 0)
+				tag.setCount(count - 1);
 			tags.remove(0);
 		}
 		for (String key : update.keySet()) {
@@ -184,6 +184,19 @@ public class RubricController {
 			case "description":
 				criterion.setDescription((String) update.get(key));
 				break;
+			case "publishDate":
+				try {
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+					String dateInString = (String) update.get(key);
+					Date date = sdf.parse(dateInString);
+					Calendar calendar = Calendar.getInstance();
+					calendar.setTime(date);
+					criterion.setPublishDate(calendar);
+				} catch (Exception e) {
+					System.out.println(e.getMessage());
+				} finally {
+					break;
+				}
 			default:
 			}
 		}
@@ -227,31 +240,30 @@ public class RubricController {
 		return criteria;
 	}
 
-	//add Tag on Criterion
+	// add Tag on Criterion
 	@PostMapping("/criterion/{id}/tag")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long addTagOfCriterion(@PathVariable long id, @RequestBody Tag tag) {
-		if(tag.getName()==null||tag.getName().length()==0)
-			return (long)-1;
+		if (tag.getName() == null || tag.getName().length() == 0)
+			return (long) -1;
 		Criterion criterion = getCriterion(id);
-		//first see if tag exists in the table already
+		// first see if tag exists in the table already
 		long tagId = criterionDao.findTag(tag.getName());
-		if(tagId<0) //create a new tag
+		if (tagId < 0) // create a new tag
 		{
 			tag = criterionDao.saveTag(tag);
-		}
-		else //fetch the existing tag from db
+		} else // fetch the existing tag from db
 		{
 			tag = criterionDao.getTag(tagId);
 		}
-		tag.setCount(tag.getCount()+1);
+		tag.setCount(tag.getCount() + 1);
 		// then add this tag under certain criterion
 		List<Tag> tags = criterion.getTags();
 		tags.add(tag);
 		criterionDao.saveCriterion(criterion);
 		return tag.getId();
 	}
-	
+
 	// get ALL tags
 	@GetMapping("/criterion/tag")
 	public List<Tag> getTags() {
