@@ -23,11 +23,15 @@ public interface CriterionDao {
 	  
 	  List<Criterion> searchCriteria( String text );
 	  
+	  List<Criterion> getAllCriteriaByTag( String tagvalue );
+	  
 	  Tag getTag(Long id);
 	  
 	  Tag saveTag(Tag tag);
 	  
-	  Long findTag(String name);
+	  List<Tag> searchTag (String text);
+	  
+	  Long findTag(String value);
 	  
 	  List<Tag> getAllTags();
 }

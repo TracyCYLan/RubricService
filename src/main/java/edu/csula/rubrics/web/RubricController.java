@@ -99,7 +99,7 @@ public class RubricController {
 
 	// get ALL criteria
 	@GetMapping("/criterion")
-	public List<Criterion> getCriteria(ModelMap models) {
+	public List<Criterion> getAllCriteria(ModelMap models) {
 		return criterionDao.getAllCriteria();
 	}
 
@@ -244,11 +244,11 @@ public class RubricController {
 	@PostMapping("/criterion/{id}/tag")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long addTagOfCriterion(@PathVariable long id, @RequestBody Tag tag) {
-		if (tag.getName() == null || tag.getName().length() == 0)
+		if (tag.getValue() == null || tag.getValue().length() == 0)
 			return (long) -1;
 		Criterion criterion = getCriterion(id);
 		// first see if tag exists in the table already
-		long tagId = criterionDao.findTag(tag.getName());
+		long tagId = criterionDao.findTag(tag.getValue());
 		if (tagId < 0) // create a new tag
 		{
 			tag = criterionDao.saveTag(tag);
@@ -265,8 +265,34 @@ public class RubricController {
 	}
 
 	// get ALL tags
-	@GetMapping("/criterion/tag")
+	@GetMapping("/tag")
 	public List<Tag> getTags() {
 		return criterionDao.getAllTags();
+	}
+	//get certain tag
+	// get this criterion
+	@GetMapping("/tag/{id}")
+	public Tag getTag(@PathVariable Long id) {
+		Tag tag = criterionDao.getTag(id);
+		if (tag == null)
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tag not found");
+		
+		return tag;
+	}
+	
+	//get all criteria use this tag
+	@GetMapping("/criterion/tag/{tagvalue}")
+	public List<Criterion> getAllCriteriaByTag(@PathVariable String tagvalue){
+		return criterionDao.getAllCriteriaByTag(tagvalue);
+	} 
+	
+	//search tag
+	@GetMapping("/tag/search/{text}")
+	public List<Tag> searchTag(@RequestParam String text) {
+		List<Tag> tag = null;
+		if (text != null)
+			tag = criterionDao.searchTag(text);
+
+		return tag;
 	}
 }

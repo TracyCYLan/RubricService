@@ -19,7 +19,7 @@ public class Tag implements Serializable {
 	private Long id;
 
 	@Column(nullable = false)
-	private String name;
+	private String value;
 
 	@Column(nullable = false)
 	private int count;
@@ -36,12 +36,12 @@ public class Tag implements Serializable {
 		this.id = id;
 	}
 
-	public String getName() {
-		return name;
+	public String getValue() {
+		return value;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setValue(String value) {
+		this.value = value;
 	}
 
 	public int getCount() {
