@@ -16,7 +16,6 @@ import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
 
-
 @Entity
 @Table(name = "criteria")
 public class Criterion implements Serializable {
@@ -34,6 +33,8 @@ public class Criterion implements Serializable {
 	private String description;
 
 	private boolean deleted;
+
+	private boolean reusable;
 
 	/* Each criterion has a number of ratings. */
 	@OneToMany(mappedBy = "criterion")
@@ -95,6 +96,14 @@ public class Criterion implements Serializable {
 
 	public void setDeleted(boolean deleted) {
 		this.deleted = deleted;
+	}
+
+	public boolean isReusable() {
+		return reusable;
+	}
+
+	public void setReusable(boolean reusable) {
+		this.reusable = reusable;
 	}
 
 	public List<Rating> getRatings() {

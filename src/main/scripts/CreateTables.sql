@@ -1,9 +1,10 @@
 create table criteria (
        id bigint not null,
         deleted bit not null,
-        description varchar(255) not null,
         name varchar(255) not null,
+        description varchar(255) not null,
         publish_date datetime(6),
+        reusable bit not null,
         FULLTEXT(name,description),
         primary key (id)
     ) engine=InnoDB;
@@ -78,8 +79,8 @@ create table criteria (
     create table tags (
        id bigint not null,
         count integer not null,
-        name varchar(255) not null,
-        FULLTEXT(name),
+        value varchar(255) not null,
+        FULLTEXT(value),
         primary key (id)
     ) engine=InnoDB;
 
