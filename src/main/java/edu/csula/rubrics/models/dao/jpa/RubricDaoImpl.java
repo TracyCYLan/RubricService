@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.User;
 import edu.csula.rubrics.models.dao.RubricDao;
@@ -55,13 +56,17 @@ public class RubricDaoImpl implements RubricDao {
     }
 
     @Override
-    public List<Rubric> searchRubrics( String input )
+    public List<Rubric> searchRubrics( String text )
     {
-    	String query = "from Rubric where name like :text or description like :text and deleted = false";
-
-            return entityManager.createQuery( query, Rubric.class )
-                .setParameter( "text", "%"+input+"%" )
-                .getResultList();
+    	if (text == null || text.trim().length() == 0)
+			return null;
+		text = text.trim();
+		String query = "SELECT r.* FROM rubrics r " + 
+				"WHERE MATCH (r.name , r.description) AGAINST (:text IN BOOLEAN MODE) " + 
+				"AND r.deleted = FALSE " + 
+				"GROUP BY r.id";
+		text = text.replace(" ", "*");
+		return entityManager.createNativeQuery(query, Rubric.class).setParameter("text", text + "*").getResultList();
     }
 
     //create a new rubric

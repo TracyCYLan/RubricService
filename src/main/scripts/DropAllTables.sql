@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS evaluation_ratings;
 DROP TABLE IF EXISTS evaluations;
 DROP TABLE IF EXISTS hibernate_sequence;
 DROP TABLE IF EXISTS ratings;
-DROP TABLE IF EXISTS rubric_crtieria;
+DROP TABLE IF EXISTS rubric_criteria;
 DROP TABLE IF EXISTS rubrics;
 DROP TABLE IF EXISTS tags;
 DROP TABLE IF EXISTS tasks;

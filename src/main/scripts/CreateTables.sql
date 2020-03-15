@@ -1,9 +1,9 @@
 create table criteria (
        id bigint not null,
-        deleted bit not null,
         name varchar(255) not null,
         description varchar(255) not null,
         publish_date datetime(6),
+        deleted bit not null,
         reusable bit not null,
         FULLTEXT(name,description),
         primary key (id)
@@ -59,20 +59,21 @@ create table criteria (
         primary key (id)
     ) engine=InnoDB;
 
-    create table rubric_crtieria (
+    create table rubric_criteria (
        rubric_id bigint not null,
         criterion_id bigint not null
     ) engine=InnoDB;
 
     create table rubrics (
        id bigint not null,
-        deleted bit not null,
-        description varchar(255),
-        public bit not null,
         name varchar(255) not null,
-        obsolete bit not null,
+        description varchar(255),
         publish_date datetime(6),
+        public bit not null,
+        deleted bit not null,
+        obsolete bit not null,
         creator_id bigint,
+        FULLTEXT(name,description),
         primary key (id)
     ) engine=InnoDB;
 
@@ -156,12 +157,12 @@ create table criteria (
        foreign key (criterion_id) 
        references criteria (id);
 
-    alter table rubric_crtieria 
+    alter table rubric_criteria 
        add constraint FKlb4spar5hm9gm790ewvfj53ps 
        foreign key (criterion_id) 
        references criteria (id);
 
-    alter table rubric_crtieria 
+    alter table rubric_criteria 
        add constraint FKp4yma4w56dnway7l59b3r6cht 
        foreign key (rubric_id) 
        references rubrics (id);
