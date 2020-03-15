@@ -38,7 +38,7 @@ public class Rubric implements Serializable {
      * */
     @ManyToMany(cascade = { CascadeType.MERGE, CascadeType.PERSIST })
     @JoinTable(
-    	    name = "rubric_crtieria",
+    	    name = "rubric_criteria",
     	    joinColumns=@JoinColumn(name = "rubric_id"),
     	    inverseJoinColumns=@JoinColumn(name="criterion_id")
     	)

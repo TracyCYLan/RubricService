@@ -67,7 +67,6 @@ public class RubricController {
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long addRubric(@RequestBody Rubric rubric) {
-		rubric.setPublishDate(Calendar.getInstance());
 		rubric = rubricDao.saveRubric(rubric);
 		return rubric.getId();
 	}
@@ -76,13 +75,13 @@ public class RubricController {
 	/*
 	 * {"id":2} => existing criterion_id
 	 */
-	@PostMapping("/{id}/addCriterion")
-	public void addCriterionOfRubric(@PathVariable long id, @RequestBody Criterion criterion) {
-		Rubric rubric = rubricDao.getRubric(id);
+	@PostMapping("/{rid}/criterion/{cid}")
+	public void addCriterionOfRubric(@PathVariable long rid, @PathVariable long cid) {
+		Rubric rubric = rubricDao.getRubric(rid);
 		if (rubric == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
 		List<Criterion> criteria = rubric.getCriteria();
-		criteria.add(criterionDao.getCriterion(criterion.getId()));
+		criteria.add(criterionDao.getCriterion(cid));
 		rubricDao.saveRubric(rubric);
 	}
 
@@ -134,6 +133,8 @@ public class RubricController {
 	@PatchMapping("/{id}")
 	public void editRubric(@PathVariable Long id, @RequestBody Map<String, Object> update) {
 		Rubric rubric = rubricDao.getRubric(id);
+		// empty rubric.criteria
+		rubric.setCriteria(new ArrayList<Criterion>());
 		for (String key : update.keySet()) {
 			switch (key) {
 			case "name":
@@ -142,15 +143,19 @@ public class RubricController {
 			case "description":
 				rubric.setDescription((String) update.get(key));
 				break;
-			case "deleted":
-				rubric.setDeleted((boolean) update.get(key));
-				break;
-			case "public":
-				rubric.setPublic((boolean) update.get(key));
-				break;
-			case "obsolete":
-				rubric.setObsolete((boolean) update.get(key));
-				break;
+			case "publishDate":
+				try {
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+					String dateInString = (String) update.get(key);
+					Date date = sdf.parse(dateInString);
+					Calendar calendar = Calendar.getInstance();
+					calendar.setTime(date);
+					rubric.setPublishDate(calendar);
+				} catch (Exception e) {
+					System.out.println(e.getMessage());
+				} finally {
+					break;
+				}
 			default:
 			}
 		}
@@ -269,24 +274,25 @@ public class RubricController {
 	public List<Tag> getTags() {
 		return criterionDao.getAllTags();
 	}
-	//get certain tag
+
+	// get certain tag
 	// get this criterion
 	@GetMapping("/tag/{id}")
 	public Tag getTag(@PathVariable Long id) {
 		Tag tag = criterionDao.getTag(id);
 		if (tag == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tag not found");
-		
+
 		return tag;
 	}
-	
-	//get all criteria use this tag
+
+	// get all criteria use this tag
 	@GetMapping("/criterion/tag/{tagvalue}")
-	public List<Criterion> getAllCriteriaByTag(@PathVariable String tagvalue){
+	public List<Criterion> getAllCriteriaByTag(@PathVariable String tagvalue) {
 		return criterionDao.getAllCriteriaByTag(tagvalue);
-	} 
-	
-	//search tag
+	}
+
+	// search tag
 	@GetMapping("/tag/search/{text}")
 	public List<Tag> searchTag(@RequestParam String text) {
 		List<Tag> tag = null;
