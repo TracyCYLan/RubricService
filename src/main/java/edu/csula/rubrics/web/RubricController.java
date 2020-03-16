@@ -78,13 +78,24 @@ public class RubricController {
 	@PostMapping("/{rid}/criterion/{cid}")
 	public void addCriterionOfRubric(@PathVariable long rid, @PathVariable long cid) {
 		Rubric rubric = rubricDao.getRubric(rid);
-		if (rubric == null)
+		if (rubric == null) {
+			System.out.println("not found" + cid);
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
+		}
 		List<Criterion> criteria = rubric.getCriteria();
 		criteria.add(criterionDao.getCriterion(cid));
 		rubricDao.saveRubric(rubric);
 	}
-
+    // send an array of criteria id and add them to rubric
+	@PostMapping("/{rid}/criteria")
+	public void addCriteriaUnderRubric(@PathVariable long rid,@RequestBody long[] cids) {
+		Rubric rubric = rubricDao.getRubric(rid);
+		if (rubric == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
+		List<Criterion> criteria = rubric.getCriteria();
+		for(long cid: cids)
+			criteria.add(criterionDao.getCriterion(cid));
+		rubricDao.saveRubric(rubric);
+	}
 	// create a criterion
 	/*
 	 * { "description":"Program Ability" }
