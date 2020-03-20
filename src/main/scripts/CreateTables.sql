@@ -73,6 +73,7 @@ create table criteria (
         deleted bit not null,
         obsolete bit not null,
         creator_id bigint,
+        last_updated_date  timestamp not null default current_timestamp,
         FULLTEXT(name,description),
         primary key (id)
     ) engine=InnoDB;

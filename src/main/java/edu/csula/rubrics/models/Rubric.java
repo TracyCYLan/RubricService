@@ -4,6 +4,7 @@ package edu.csula.rubrics.models;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -51,6 +52,9 @@ public class Rubric implements Serializable {
 
     @Column(name = "publish_date")
     private Calendar publishDate;
+    
+	@Column(name = "last_updated_date")
+	private Date lastUpdatedDate;
 
     @Column(name = "public", nullable = false)
     private boolean isPublic;
@@ -61,6 +65,7 @@ public class Rubric implements Serializable {
 
     public Rubric()
     {
+		lastUpdatedDate = new Date();
         isPublic = false;
         deleted = false;
         criteria = new ArrayList<Criterion>();
@@ -141,6 +146,14 @@ public class Rubric implements Serializable {
     {
         this.publishDate = publishDate;
     }
+    
+	public Date getLastUpdatedDate() {
+		return lastUpdatedDate;
+	}
+
+	public void setLastUpdatedDate(Date lastUpdatedDate) {
+		this.lastUpdatedDate = lastUpdatedDate;
+	}
 
     public boolean isPublic()
     {
