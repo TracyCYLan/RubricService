@@ -202,8 +202,6 @@ public class RubricController {
 	@PatchMapping("/{id}")
 	public void editRubric(@PathVariable Long id, @RequestBody Map<String, Object> update) {
 		Rubric rubric = rubricDao.getRubric(id);
-		// empty rubric.criteria
-		rubric.setCriteria(new ArrayList<Criterion>());
 		for (String key : update.keySet()) {
 			switch (key) {
 			case "name":
