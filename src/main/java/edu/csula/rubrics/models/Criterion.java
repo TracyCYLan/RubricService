@@ -3,8 +3,12 @@ package edu.csula.rubrics.models;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -38,13 +42,13 @@ public class Criterion implements Serializable {
 
 	/* Each criterion has a number of ratings. */
 	@OneToMany(mappedBy = "criterion")
-	@OrderBy("value desc")
+//	@OrderBy("value desc")
 	private List<Rating> ratings;
 
 	@ManyToMany
 	@JoinTable(name = "criterion_tags", joinColumns = @JoinColumn(name = "criterion_id"), inverseJoinColumns = @JoinColumn(name = "tag_id"))
 	private List<Tag> tags;
-
+	
 	@Column(name = "publish_date")
 	private Calendar publishDate;
 

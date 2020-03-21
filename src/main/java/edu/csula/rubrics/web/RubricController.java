@@ -4,8 +4,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -78,24 +80,34 @@ public class RubricController {
 	@PostMapping("/{rid}/criterion/{cid}")
 	public void addCriterionOfRubric(@PathVariable long rid, @PathVariable long cid) {
 		Rubric rubric = rubricDao.getRubric(rid);
-		if (rubric == null) {
-			System.out.println("not found" + cid);
+		if (rubric == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
-		}
 		List<Criterion> criteria = rubric.getCriteria();
 		criteria.add(criterionDao.getCriterion(cid));
 		rubricDao.saveRubric(rubric);
 	}
-    // send an array of criteria id and add them to rubric
-	@PostMapping("/{rid}/criteria")
-	public void addCriteriaUnderRubric(@PathVariable long rid,@RequestBody long[] cids) {
+	@DeleteMapping("/{rid}/criterion/{cid}")
+	public void removeCriterionOfRubric(@PathVariable long rid, @PathVariable long cid) {
 		Rubric rubric = rubricDao.getRubric(rid);
-		if (rubric == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
+		if (rubric == null)
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
 		List<Criterion> criteria = rubric.getCriteria();
-		for(long cid: cids)
+		
+		criteria.remove(criterionDao.getCriterion(cid));
+		rubricDao.saveRubric(rubric);
+	}
+	// send an array of criteria id and add them to rubric
+	@PostMapping("/{rid}/criteria")
+	public void addCriteriaUnderRubric(@PathVariable long rid, @RequestBody long[] cids) {
+		Rubric rubric = rubricDao.getRubric(rid);
+		if (rubric == null)
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
+		List<Criterion> criteria = rubric.getCriteria();
+		for (long cid : cids)
 			criteria.add(criterionDao.getCriterion(cid));
 		rubricDao.saveRubric(rubric);
 	}
+
 	// create a criterion
 	/*
 	 * { "description":"Program Ability" }
@@ -103,8 +115,54 @@ public class RubricController {
 	@PostMapping("/criterion")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long addCriterion(@RequestBody Criterion criterion) {
+		List<Rating> ratings = criterion.getRatings();
+		List<Tag> tags = criterion.getTags();
+		criterion.setTags(new ArrayList<Tag>());// empty the tag first since we want to create it manually
 		criterion = criterionDao.saveCriterion(criterion);
+		long cid = criterion.getId();
+
+		// add all ratings in criterion
+		addRatingsOfCriterion(cid, ratings);
+
+		// create tag manually and add them into tags list of criterion
+		List<Tag> newTags = new ArrayList<>();
+		for (Tag tag : tags)
+			newTags.add(createTag(tag));
+
+		criterion.setTags(newTags);
+
 		return criterion.getId();
+	}
+
+	// we send a list of ratings and we are going to add all ratings under this
+	// criterion
+	public void addRatingsOfCriterion(long cid, List<Rating> ratings) {
+		Criterion criterion = getCriterion(cid);
+		List<Rating> newRatings = criterion.getRatings();
+		for (Rating rating : ratings) {
+			// first create a rating
+			rating.setCriterion(criterion);
+			rating = criterionDao.saveRating(rating);
+			// then add this under certain criterion
+			newRatings.add(rating);
+		}
+	}
+
+	public Tag createTag(Tag tag) {
+		if (tag.getValue() == null || tag.getValue().length() == 0)
+			return null;
+		// first see if tag exists in the table already
+		long tagId = criterionDao.findTag(tag.getValue());
+		if (tagId < 0) // create a new tag
+		{
+			tag = criterionDao.saveTag(tag);
+		} else // fetch the existing tag from db
+		{
+			tag = criterionDao.getTag(tagId);
+		}
+		tag.setCount(tag.getCount() + 1);
+		tag = criterionDao.saveTag(tag);
+		return tag;
 	}
 
 	// get ALL criteria
@@ -144,8 +202,6 @@ public class RubricController {
 	@PatchMapping("/{id}")
 	public void editRubric(@PathVariable Long id, @RequestBody Map<String, Object> update) {
 		Rubric rubric = rubricDao.getRubric(id);
-		// empty rubric.criteria
-		rubric.setCriteria(new ArrayList<Criterion>());
 		for (String key : update.keySet()) {
 			switch (key) {
 			case "name":
@@ -170,12 +226,13 @@ public class RubricController {
 			default:
 			}
 		}
+		rubric.setLastUpdatedDate(new Date());
 		rubricDao.saveRubric(rubric);
 	}
 
 	// edit properties of criteria.
 	@PatchMapping("/criterion/{id}")
-	public void editCriterion(@PathVariable Long id, @RequestBody Map<String, Object> update) {
+	public void editCriterion(@PathVariable Long id, @RequestBody Criterion updatedCriterion) {
 		Criterion criterion = criterionDao.getCriterion(id);
 		// empty ratings and tags
 		List<Rating> ratings = criterion.getRatings();
@@ -192,31 +249,18 @@ public class RubricController {
 				tag.setCount(count - 1);
 			tags.remove(0);
 		}
-		for (String key : update.keySet()) {
-			switch (key) {
-			case "name":
-				criterion.setName((String) update.get(key));
-				break;
-			case "description":
-				criterion.setDescription((String) update.get(key));
-				break;
-			case "publishDate":
-				try {
-					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-					String dateInString = (String) update.get(key);
-					Date date = sdf.parse(dateInString);
-					Calendar calendar = Calendar.getInstance();
-					calendar.setTime(date);
-					criterion.setPublishDate(calendar);
-				} catch (Exception e) {
-					System.out.println(e.getMessage());
-				} finally {
-					break;
-				}
-			default:
-			}
-		}
+		criterion.setName(updatedCriterion.getName());
+		criterion.setDescription(updatedCriterion.getDescription());
+		criterion.setPublishDate(updatedCriterion.getPublishDate());
 
+		addRatingsOfCriterion(id, updatedCriterion.getRatings());
+
+		// create tag manually and add them into tags list of criterion
+		List<Tag> newTags = new ArrayList<>();
+		for (Tag tag : updatedCriterion.getTags())
+			newTags.add(createTag(tag));
+		criterion.setTags(newTags);
+	
 		criterionDao.saveCriterion(criterion);
 	}
 

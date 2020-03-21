@@ -79,7 +79,7 @@ public class RubricDaoImpl implements RubricDao {
 
 	@Override
 	public List<Rubric> getAllRubrics() {
-		 return entityManager.createQuery("from Rubric where deleted = false", Rubric.class)
+		 return entityManager.createQuery("from Rubric where deleted = false order by lastUpdatedDate desc, publishDate desc", Rubric.class)
 	                .getResultList();
 	}
 
