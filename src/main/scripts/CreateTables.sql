@@ -61,7 +61,9 @@ create table criteria (
 
     create table rubric_criteria (
        rubric_id bigint not null,
-        criterion_id bigint not null
+        criterion_id bigint not null,
+        criterion_order integer not null,
+        primary key (rubric_id, criterion_order, criterion_id)
     ) engine=InnoDB;
 
     create table rubrics (

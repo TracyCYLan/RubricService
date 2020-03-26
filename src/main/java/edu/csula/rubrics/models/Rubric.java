@@ -16,6 +16,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 
 @Entity
@@ -43,6 +44,7 @@ public class Rubric implements Serializable {
     	    joinColumns=@JoinColumn(name = "rubric_id"),
     	    inverseJoinColumns=@JoinColumn(name="criterion_id")
     	)
+    @OrderColumn(name = "criterion_order")
     private List<Criterion> criteria;
 
 
