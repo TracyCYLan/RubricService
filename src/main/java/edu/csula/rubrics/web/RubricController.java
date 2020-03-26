@@ -3,16 +3,14 @@ package edu.csula.rubrics.web;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.ui.ModelMap;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +24,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-//import edu.csula.rubrics.models.ApiResponse;
 import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Rubric;
@@ -84,6 +81,7 @@ public class RubricController {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
 		List<Criterion> criteria = rubric.getCriteria();
 		criteria.add(criterionDao.getCriterion(cid));
+		rubric.setLastUpdatedDate(new Date());
 		rubricDao.saveRubric(rubric);
 	}
 	@DeleteMapping("/{rid}/criterion/{cid}")
@@ -94,6 +92,17 @@ public class RubricController {
 		List<Criterion> criteria = rubric.getCriteria();
 		
 		criteria.remove(criterionDao.getCriterion(cid));
+		rubric.setLastUpdatedDate(new Date());
+		rubricDao.saveRubric(rubric);
+	}
+	//changeOrderOfCriterionInRubric
+	@PatchMapping("/{rid}/criteria/{order1}/{order2}")
+	public void changeCriteriaOrderInRubric(@PathVariable long rid,@PathVariable int order1,@PathVariable int order2) {
+		Rubric rubric = rubricDao.getRubric(rid);
+		if (rubric == null)
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
+		List<Criterion> criteria = rubric.getCriteria();
+		Collections.swap(criteria, order1, order2);
 		rubricDao.saveRubric(rubric);
 	}
 	// send an array of criteria id and add them to rubric
