@@ -139,7 +139,7 @@ public class RubricController {
 			newTags.add(createTag(tag));
 
 		criterion.setTags(newTags);
-
+		criterionDao.saveCriterion(criterion);
 		return criterion.getId();
 	}
 
@@ -223,10 +223,17 @@ public class RubricController {
 				try {
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 					String dateInString = (String) update.get(key);
-					Date date = sdf.parse(dateInString);
-					Calendar calendar = Calendar.getInstance();
-					calendar.setTime(date);
-					rubric.setPublishDate(calendar);
+					if(dateInString==null)
+					{
+						rubric.setPublishDate(null);
+					}
+					else
+					{
+						Date date = sdf.parse(dateInString);
+						Calendar calendar = Calendar.getInstance();
+						calendar.setTime(date);
+						rubric.setPublishDate(calendar);
+					}
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				} finally {
