@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -245,7 +246,20 @@ public class RubricController {
 		rubric.setLastUpdatedDate(new Date());
 		rubricDao.saveRubric(rubric);
 	}
-
+	//publish rubric
+	@PutMapping("/publish/{id}")
+	public void publishRubric(@PathVariable Long id) {
+		Rubric rubric = rubricDao.getRubric(id);
+		rubric.setPublishDate(Calendar.getInstance());
+		rubricDao.saveRubric(rubric);
+	}
+	//publish criterion
+	@PutMapping("/criterion/publish/{id}")
+	public void publishCriterion(@PathVariable Long id) {
+		Criterion criterion = criterionDao.getCriterion(id);
+		criterion.setPublishDate(Calendar.getInstance());
+		criterionDao.saveCriterion(criterion);
+	}
 	// edit properties of criteria.
 	@PatchMapping("/criterion/{id}")
 	public void editCriterion(@PathVariable Long id, @RequestBody Criterion updatedCriterion) {
