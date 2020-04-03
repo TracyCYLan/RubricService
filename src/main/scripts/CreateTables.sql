@@ -1,9 +1,35 @@
-create table criteria (
+    create table artifacts (
        id bigint not null,
+        endpoint varchar(255) not null,
         name varchar(255) not null,
-        description varchar(255) not null,
-        publish_date datetime(6),
+        type varchar(255) not null,
+        primary key (id)
+    ) engine=InnoDB;
+
+    create table assessment_ratings (
+       assessment_id bigint not null,
+        rating_id bigint not null
+    ) engine=InnoDB;
+
+    create table assessments (
+       id bigint not null,
+        comments varchar(255),
+        completed bit not null,
+        date datetime(6),
         deleted bit not null,
+        assesor_id bigint,
+        artifact_id bigint,
+        rubric_id bigint,
+        task_id bigint,
+        primary key (id)
+    ) engine=InnoDB;
+
+    create table criteria (
+       id bigint not null,
+        deleted bit not null,
+        description varchar(255) not null,
+        name varchar(255) not null,
+        publish_date datetime(6),
         reusable bit not null,
         FULLTEXT(name,description),
         primary key (id)
@@ -14,27 +40,11 @@ create table criteria (
         tag_id bigint not null
     ) engine=InnoDB;
 
-    create table evaluation_ratings (
-       evaluation_id bigint not null,
-        rating_id bigint not null
-    ) engine=InnoDB;
-
-    create table evaluations (
-       id bigint not null,
-        comments varchar(255),
-        completed bit not null,
-        date datetime(6),
-        deleted bit not null,
-        evaluatee_id bigint,
-        evaluator_id bigint,
-        rubric_id bigint,
-        task_id bigint,
-        primary key (id)
-    ) engine=InnoDB;
-
     create table hibernate_sequence (
        next_val bigint
     ) engine=InnoDB;
+
+    insert into hibernate_sequence values ( 1 );
 
     insert into hibernate_sequence values ( 1 );
 
@@ -63,19 +73,19 @@ create table criteria (
        rubric_id bigint not null,
         criterion_id bigint not null,
         criterion_order integer not null,
-        primary key (rubric_id, criterion_order, criterion_id)
+        primary key (rubric_id, criterion_order)
     ) engine=InnoDB;
 
     create table rubrics (
        id bigint not null,
-        name varchar(255) not null,
-        description varchar(255),
-        publish_date datetime(6),
-        public bit not null,
         deleted bit not null,
+        description varchar(255),
+        public bit not null,
+        last_updated_date timestamp not null default current_timestamp,
+        name varchar(255) not null,
         obsolete bit not null,
+        publish_date datetime(6),
         creator_id bigint,
-        last_updated_date  timestamp not null default current_timestamp,
         FULLTEXT(name,description),
         primary key (id)
     ) engine=InnoDB;
@@ -115,6 +125,37 @@ create table criteria (
     alter table users 
        add constraint UK_r43af9ap4edm43mmtq01oddj6 unique (username);
 
+    alter table assessment_ratings 
+       add constraint FKpf7rbs9siysidpavy0kvci08m 
+       foreign key (rating_id) 
+       references ratings (id);
+
+    alter table assessment_ratings 
+       add constraint FK85whnro40v36j4ai3c8pby0gf 
+       foreign key (assessment_id) 
+       references assessments (id);
+
+	alter table assessments 
+       add constraint FKc66egnd7uamp4oyucik0upfl7 
+       foreign key (artifact_id) 
+       references artifacts (id);
+
+    alter table assessments 
+       add constraint FKs7rtlo6e56y6kl5hervu5fehm 
+       foreign key (assesor_id) 
+       references users (id);
+	
+
+    alter table assessments 
+       add constraint FK7va5fxsqvo6tth0jwvpynrpah 
+       foreign key (rubric_id) 
+       references rubrics (id);
+
+    alter table assessments 
+       add constraint FKqwksq4urufoxd7unq3j5t8a4r 
+       foreign key (task_id) 
+       references tasks (id);
+
     alter table criterion_tags 
        add constraint FKi7hmj6w4cwfju9raklytid47o 
        foreign key (tag_id) 
@@ -125,48 +166,18 @@ create table criteria (
        foreign key (criterion_id) 
        references criteria (id);
 
-    alter table evaluation_ratings 
-       add constraint FKr7pgea1xxloknvvx64dkwdbji 
-       foreign key (rating_id) 
-       references ratings (id);
-
-    alter table evaluation_ratings 
-       add constraint FKtfg0ui66knd2kd0o4de9n2g3w 
-       foreign key (evaluation_id) 
-       references evaluations (id);
-
-    alter table evaluations 
-       add constraint FKst0d95rgtyx6wtqgn6746u9sp 
-       foreign key (evaluatee_id) 
-       references users (id);
-
-    alter table evaluations 
-       add constraint FKqihdmjba0yaamhjp8gr00c27m 
-       foreign key (evaluator_id) 
-       references users (id);
-
-    alter table evaluations 
-       add constraint FKhdbd2jouukmpq9gy3vf3wx9av 
-       foreign key (rubric_id) 
-       references rubrics (id);
-
-    alter table evaluations 
-       add constraint FKj3rmu9d62hqh1y9c3336xa86p 
-       foreign key (task_id) 
-       references tasks (id);
-
     alter table ratings 
        add constraint FKqkq5f3y63dkujpg7imq036s2n 
        foreign key (criterion_id) 
        references criteria (id);
 
     alter table rubric_criteria 
-       add constraint FKlb4spar5hm9gm790ewvfj53ps 
+       add constraint FKiqehfsbkmxgry7gjiq7j5c7xh 
        foreign key (criterion_id) 
        references criteria (id);
 
     alter table rubric_criteria 
-       add constraint FKp4yma4w56dnway7l59b3r6cht 
+       add constraint FKjs1mcsyrjsecv9qu0em2ldafw 
        foreign key (rubric_id) 
        references rubrics (id);
 

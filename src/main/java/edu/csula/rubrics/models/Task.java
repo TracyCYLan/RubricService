@@ -40,8 +40,8 @@ public class Task implements Serializable {
     private String name;
     
     @ManyToOne
-    @JoinColumn(name = "evaluator_id")
-    private User evaluator;
+    @JoinColumn(name = "assessor_id")
+    private User assessor;
     
     @ManyToOne
     @JoinColumn(name ="rubric_id")
@@ -52,7 +52,7 @@ public class Task implements Serializable {
     
     @JsonIgnore
     @OneToMany(mappedBy="task")
-    private List<Evaluation> evaluations;
+    private List<Assessment> assessments;
     
     public Task()
     {
@@ -62,7 +62,7 @@ public class Task implements Serializable {
         dueDate.set( Calendar.MINUTE, 59 );
         dueDate.set( Calendar.SECOND, 59 );
         dueDate.set( Calendar.MILLISECOND, 0 );
-        evaluations = new ArrayList<Evaluation>();
+        assessments = new ArrayList<Assessment>();
     }
 
 	public Long getId() {
@@ -89,12 +89,12 @@ public class Task implements Serializable {
 		this.type = type;
 	}
 
-	public User getEvaluator() {
-		return evaluator;
+	public User getAssessor() {
+		return assessor;
 	}
 
-	public void setEvaluator(User evaluator) {
-		this.evaluator = evaluator;
+	public void setAssessor(User assessor) {
+		this.assessor = assessor;
 	}
 
 	public Rubric getRubric() {
@@ -105,12 +105,12 @@ public class Task implements Serializable {
 		this.rubric = rubric;
 	}
 
-    public List<Evaluation> getEvaluations() {
-		return evaluations;
+	public List<Assessment> getAssessments() {
+		return assessments;
 	}
 
-	public void setEvaluations(List<Evaluation> evaluations) {
-		this.evaluations = evaluations;
+	public void setAssessments(List<Assessment> assessments) {
+		this.assessments = assessments;
 	}
 
 	public Calendar getDueDate()

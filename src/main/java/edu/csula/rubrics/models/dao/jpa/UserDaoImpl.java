@@ -10,6 +10,7 @@ import javax.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.User;
 import edu.csula.rubrics.models.dao.UserDao;
 
@@ -25,7 +26,12 @@ public class UserDaoImpl implements UserDao {
     {
         return entityManager.find( User.class, id );
     }
-
+	
+    @Override
+	public List<User> getAllUsers() {
+		return entityManager.createQuery("from User", User.class).getResultList();
+	}
+	
     @Override
     public User getUserByCin( String cin )
     {

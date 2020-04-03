@@ -8,6 +8,8 @@ public interface UserDao {
     
 	User getUser( Long id );
 
+	List<User> getAllUsers();
+	
     User getUserByCin( String cin );
 
     User getUserByUsername( String username );

@@ -14,6 +14,10 @@ INSERT INTO tags (`id`, `count`, `value`) VALUES ('2009', '10', 'CS3337_OUTCOME'
 INSERT INTO tags (`id`, `count`, `value`) VALUES ('2010', '13', 'CS5220_OUTCOME');
 
 INSERT INTO users (`id`, `cin`, `first_name`, `last_name`, `password`, `username`) VALUES ('5000', '1234', 'Jane', 'Doe', 'aaaa', 'janedoe');
+INSERT INTO users (`id`, `cin`, `first_name`, `last_name`, `password`, `username`) VALUES ('5001', '1235', 'Tracy', 'Lan', 'aaaa', 'tracyl');
+INSERT INTO users (`id`, `cin`, `first_name`, `last_name`, `password`, `username`) VALUES ('5002', '1236', 'John', 'Doe', 'aaaa', 'johndoe');
+INSERT INTO users (`id`, `cin`, `first_name`, `last_name`, `password`, `username`) VALUES ('5003', '1237', 'Josh', 'Chris', 'aaaa', 'joshc');
+INSERT INTO users (`id`, `cin`, `first_name`, `last_name`, `password`, `username`) VALUES ('5004', '1238', 'Tom', 'Sawyer', 'aaaa', 'toms');
 
 INSERT INTO rubrics (`id`, `name`, `description`, `publish_date`, `public`, `deleted`, `obsolete`, `creator_id`) VALUES ('3001', 'Rubric 1', 'this is my first rubric', '2020-12-24', b'1', b'0', b'0', 5000);
 INSERT INTO rubrics (`id`, `name`, `description`, `publish_date`, `public`, `deleted`, `obsolete`, `creator_id`) VALUES ('3002', 'Rubric 2', 'fun', '2020-04-24', b'1', b'0', b'0', 5000);
