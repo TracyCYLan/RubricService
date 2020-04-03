@@ -14,10 +14,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import edu.csula.rubrics.models.Evaluation;
 import edu.csula.rubrics.models.Task;
 import edu.csula.rubrics.models.User;
-import edu.csula.rubrics.models.dao.EvaluationDao;
+import edu.csula.rubrics.models.dao.AssessmentDao;
 import edu.csula.rubrics.models.dao.TaskDao;
 import edu.csula.rubrics.models.dao.UserDao;
 
@@ -26,7 +25,7 @@ import edu.csula.rubrics.models.dao.UserDao;
 public class TaskController {
 
 	@Autowired
-	EvaluationDao evaluationDao;
+	AssessmentDao assessmentDao;
 
 	@Autowired
 	TaskDao taskDao;
@@ -50,7 +49,7 @@ public class TaskController {
 	 */
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public Long addEvaluation(@RequestBody Task task) {
+	public Long addTask(@RequestBody Task task) {
 		task = taskDao.saveTask(task);
 		return task.getId();
 	}

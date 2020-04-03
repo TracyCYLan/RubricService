@@ -18,8 +18,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 
 @Entity
-@Table(name = "evaluations")
-public class Evaluation implements Serializable {
+@Table(name = "assessments")
+public class Assessment implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -28,12 +28,12 @@ public class Evaluation implements Serializable {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "evaluator_id")
-    private User evaluator;
+    @JoinColumn(name = "assesor_id")
+    private User assessor;
     
     @ManyToOne
-    @JoinColumn(name = "evaluatee_id")
-    private User evaluatee;
+    @JoinColumn(name = "artifact_id")
+    private Artifact artifact;
     
     @ManyToOne
     @JoinColumn(name = "rubric_id")
@@ -45,8 +45,8 @@ public class Evaluation implements Serializable {
     private Task task;
     
     @ManyToMany
-    @JoinTable(name = "evaluation_ratings",
-    joinColumns = @JoinColumn(name = "evaluation_id"),
+    @JoinTable(name = "assessment_ratings",
+    joinColumns = @JoinColumn(name = "assessment_id"),
     inverseJoinColumns = @JoinColumn(name = "rating_id"))
     private List<Rating> ratings;
 
@@ -59,18 +59,17 @@ public class Evaluation implements Serializable {
     private boolean deleted;
     
 
-    public Evaluation()
+    public Assessment()
     {
         ratings = new ArrayList<Rating>();
         completed = false;
         deleted = false;
     }
 
-    public Evaluation( User evaluator )
+    public Assessment( User assessor )
     {
         this();
-        this.evaluator = evaluator;
-
+        this.assessor = assessor;
     }
 
     public Double getOverallRating()
@@ -105,22 +104,12 @@ public class Evaluation implements Serializable {
         this.id = id;
     }
 
-    public User getEvaluator()
-    {
-        return evaluator;
-    }
-
-    public void setEvaluator( User evaluator )
-    {
-        this.evaluator = evaluator;
-    }
-
-    public User getEvaluatee() {
-		return evaluatee;
+	public User getAssessor() {
+		return assessor;
 	}
 
-	public void setEvaluatee(User evaluatee) {
-		this.evaluatee = evaluatee;
+	public void setAssessor(User assessor) {
+		this.assessor = assessor;
 	}
 
 	public Rubric getRubric() {
