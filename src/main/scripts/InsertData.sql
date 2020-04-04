@@ -21,3 +21,11 @@ INSERT INTO users (`id`, `cin`, `first_name`, `last_name`, `password`, `username
 
 INSERT INTO rubrics (`id`, `name`, `description`, `publish_date`, `public`, `deleted`, `obsolete`, `creator_id`) VALUES ('3001', 'Rubric 1', 'this is my first rubric', '2020-12-24', b'1', b'0', b'0', 5000);
 INSERT INTO rubrics (`id`, `name`, `description`, `publish_date`, `public`, `deleted`, `obsolete`, `creator_id`) VALUES ('3002', 'Rubric 2', 'fun', '2020-04-24', b'1', b'0', b'0', 5000);
+
+INSERT INTO associations (`id`, `endpoint`, `name`, `type`) VALUES ('6001', '/api/v1/courses/cs-3220/assignments/1', 'HW1 in CS3220', 'Assignment');
+INSERT INTO associations (`id`, `endpoint`, `name`, `type`) VALUES ('6002', '/api/v1/courses/cs-3220/assignments/2', 'HW2 in CS3220', 'Assignment');
+INSERT INTO associations (`id`, `endpoint`, `name`, `type`) VALUES ('6003', '/api/v1/courses/cs-2011/assignments/1', 'HW1 in CS2011', 'Assignment');
+
+INSERT INTO artifacts (`id`, `endpoint`, `name`, `type`) VALUES ('7001', '/api/v1/courses/cs-2011/assignments/6003/submissions/5001', 'Tracy\'s submission for CS2011 HW1', 'Submission');
+INSERT INTO artifacts (`id`, `endpoint`, `name`, `type`) VALUES ('7002', '/api/v1/courses/cs-2011/assignments/6003/submissions/5000', 'Jane\'s submission for CS2011 HW1', 'Submission');
+INSERT INTO artifacts (`id`, `endpoint`, `name`, `type`) VALUES ('7003', '/api/v1/courses/cs-3220/assignments/6001/submissions/5000', 'Jane\'s submission for CS3220 HW1', 'Submission');

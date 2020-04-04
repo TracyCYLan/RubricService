@@ -1,16 +1,20 @@
 package edu.csula.rubrics.models;
 
 import java.io.Serializable;
+import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "artifacts")
-public class Artifact implements Serializable {
+@Table(name = "associations")
+public class Association implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
@@ -21,15 +25,22 @@ public class Artifact implements Serializable {
 	@Column(nullable = false)
 	private String name;
 
-	//type: e.g., submission
+	//type might includes: 'Assignment', 'Course', 'Account'
 	@Column(nullable = false)
 	private String type;
 
-	//the endpoint to retrieve the artifact (e.g., the endpoint of Canvas API to get submission?)
-	//e.g., url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id
+	//the endpoint to retrieve the association (e.g., the endpoint of Canvas API to get assignment)
+	//e.g., url:GET|/api/v1/courses/:course_id/assignments/:id
 	@Column(nullable = false)
 	private String endpoint;
 
+    @ManyToOne
+    @JoinColumn(name = "rubric_id")
+    private Rubric rubric;
+    
+    @OneToMany(mappedBy = "association")
+    private List<Assessment> assessments;
+	
 	public Long getId() {
 		return id;
 	}
@@ -60,6 +71,22 @@ public class Artifact implements Serializable {
 
 	public void setEndpoint(String endpoint) {
 		this.endpoint = endpoint;
+	}
+	
+	public Rubric getRubric() {
+		return rubric;
+	}
+
+	public void setRubric(Rubric rubric) {
+		this.rubric = rubric;
+	}
+
+	public List<Assessment> getAssessments() {
+		return assessments;
+	}
+
+	public void setAssessments(List<Assessment> assessments) {
+		this.assessments = assessments;
 	}
 	
 }
