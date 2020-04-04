@@ -35,9 +35,10 @@ public class Assessment implements Serializable {
     @JoinColumn(name = "artifact_id")
     private Artifact artifact;
     
+    @JsonIgnore
     @ManyToOne
-    @JoinColumn(name = "rubric_id")
-    private Rubric rubric;
+    @JoinColumn(name = "association_id")
+    private Association association;
     
     @JsonIgnore
     @ManyToOne
@@ -112,14 +113,6 @@ public class Assessment implements Serializable {
 		this.assessor = assessor;
 	}
 
-	public Rubric getRubric() {
-		return rubric;
-	}
-
-	public void setRubric(Rubric rubric) {
-		this.rubric = rubric;
-	}
-
 	public List<Rating> getRatings()
     {
         return ratings;
@@ -178,5 +171,20 @@ public class Assessment implements Serializable {
 		this.task = task;
 	}
 
+	public Artifact getArtifact() {
+		return artifact;
+	}
+
+	public void setArtifact(Artifact artifact) {
+		this.artifact = artifact;
+	}
+
+	public Association getAssociation() {
+		return association;
+	}
+
+	public void setAssociation(Association association) {
+		this.association = association;
+	}
 
 }

@@ -17,10 +17,19 @@
         completed bit not null,
         date datetime(6),
         deleted bit not null,
-        assesor_id bigint,
         artifact_id bigint,
-        rubric_id bigint,
+        assesor_id bigint,
+        association_id bigint,
         task_id bigint,
+        primary key (id)
+    ) engine=InnoDB;
+
+    create table associations (
+       id bigint not null,
+        endpoint varchar(255) not null,
+        name varchar(255) not null,
+        type varchar(255) not null,
+        rubric_id bigint,
         primary key (id)
     ) engine=InnoDB;
 
@@ -43,6 +52,8 @@
     create table hibernate_sequence (
        next_val bigint
     ) engine=InnoDB;
+
+    insert into hibernate_sequence values ( 1 );
 
     insert into hibernate_sequence values ( 1 );
 
@@ -103,7 +114,7 @@
         due_date datetime(6),
         name varchar(255) not null,
         type varchar(255) not null,
-        evaluator_id bigint,
+        assessor_id bigint,
         rubric_id bigint,
         primary key (id)
     ) engine=InnoDB;
@@ -135,7 +146,7 @@
        foreign key (assessment_id) 
        references assessments (id);
 
-	alter table assessments 
+    alter table assessments 
        add constraint FKc66egnd7uamp4oyucik0upfl7 
        foreign key (artifact_id) 
        references artifacts (id);
@@ -144,17 +155,21 @@
        add constraint FKs7rtlo6e56y6kl5hervu5fehm 
        foreign key (assesor_id) 
        references users (id);
-	
 
     alter table assessments 
-       add constraint FK7va5fxsqvo6tth0jwvpynrpah 
-       foreign key (rubric_id) 
-       references rubrics (id);
+       add constraint FK6bahvwpgsolvirjm45o5imwu0 
+       foreign key (association_id) 
+       references associations (id);
 
     alter table assessments 
        add constraint FKqwksq4urufoxd7unq3j5t8a4r 
        foreign key (task_id) 
        references tasks (id);
+
+    alter table associations 
+       add constraint FKlj0j4qal71smvw7ldnm2qpk8v 
+       foreign key (rubric_id) 
+       references rubrics (id);
 
     alter table criterion_tags 
        add constraint FKi7hmj6w4cwfju9raklytid47o 
@@ -187,8 +202,8 @@
        references users (id);
 
     alter table tasks 
-       add constraint FK5a855yh5kwk4d0h9p6k5uphvx 
-       foreign key (evaluator_id) 
+       add constraint FKhs3j93s8qbqcx7tg5knbjjjie 
+       foreign key (assessor_id) 
        references users (id);
 
     alter table tasks 
