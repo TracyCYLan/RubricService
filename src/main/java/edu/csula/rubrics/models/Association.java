@@ -37,9 +37,6 @@ public class Association implements Serializable {
     @ManyToOne
     @JoinColumn(name = "rubric_id")
     private Rubric rubric;
-    
-    @OneToMany(mappedBy = "association")
-    private List<Assessment> assessments;
 	
 	public Long getId() {
 		return id;
@@ -79,14 +76,6 @@ public class Association implements Serializable {
 
 	public void setRubric(Rubric rubric) {
 		this.rubric = rubric;
-	}
-
-	public List<Assessment> getAssessments() {
-		return assessments;
-	}
-
-	public void setAssessments(List<Assessment> assessments) {
-		this.assessments = assessments;
 	}
 	
 }

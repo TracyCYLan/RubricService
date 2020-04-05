@@ -35,7 +35,6 @@ public class Assessment implements Serializable {
     @JoinColumn(name = "artifact_id")
     private Artifact artifact;
     
-    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "association_id")
     private Association association;
