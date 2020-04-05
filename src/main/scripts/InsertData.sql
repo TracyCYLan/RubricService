@@ -25,7 +25,12 @@ INSERT INTO rubrics (`id`, `name`, `description`, `publish_date`, `public`, `del
 INSERT INTO associations (`id`, `endpoint`, `name`, `type`) VALUES ('6001', '/api/v1/courses/cs-3220/assignments/1', 'HW1 in CS3220', 'Assignment');
 INSERT INTO associations (`id`, `endpoint`, `name`, `type`) VALUES ('6002', '/api/v1/courses/cs-3220/assignments/2', 'HW2 in CS3220', 'Assignment');
 INSERT INTO associations (`id`, `endpoint`, `name`, `type`) VALUES ('6003', '/api/v1/courses/cs-2011/assignments/1', 'HW1 in CS2011', 'Assignment');
+INSERT INTO associations (`id`, `endpoint`, `name`, `type`) VALUES ('6004', '/api/v1/courses/cs-4961/assignments/1', 'Essay', 'Assignment');
+INSERT INTO associations (`id`, `endpoint`, `name`, `type`) VALUES ('6005', '/api/v1/courses/cs-4961/assignments/2', 'Teamwork', 'Assignment');
+
 
 INSERT INTO artifacts (`id`, `endpoint`, `name`, `type`) VALUES ('7001', '/api/v1/courses/cs-2011/assignments/6003/submissions/5001', 'Tracy\'s submission for CS2011 HW1', 'Submission');
 INSERT INTO artifacts (`id`, `endpoint`, `name`, `type`) VALUES ('7002', '/api/v1/courses/cs-2011/assignments/6003/submissions/5000', 'Jane\'s submission for CS2011 HW1', 'Submission');
 INSERT INTO artifacts (`id`, `endpoint`, `name`, `type`) VALUES ('7003', '/api/v1/courses/cs-3220/assignments/6001/submissions/5000', 'Jane\'s submission for CS3220 HW1', 'Submission');
+INSERT INTO artifacts (`id`, `endpoint`, `name`, `type`) VALUES ('7004', '/api/v1/courses/cs-4961/assignments/6004/submissions/5002', 'Jane\'s submission for CS2011 HW1', 'Submission');
+INSERT INTO artifacts (`id`, `endpoint`, `name`, `type`) VALUES ('7005', '/api/v1/courses/cs-4961/assignments/6005/submissions/5002', 'Jane\'s submission for CS3220 HW1', 'Submission');

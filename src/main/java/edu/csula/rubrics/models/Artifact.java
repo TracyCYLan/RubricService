@@ -1,12 +1,19 @@
 package edu.csula.rubrics.models;
 
 import java.io.Serializable;
+import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "artifacts")
@@ -29,6 +36,17 @@ public class Artifact implements Serializable {
 	//e.g., url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id
 	@Column(nullable = false)
 	private String endpoint;
+
+	//this artifact should be under some certain association
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "association_id")
+	private Association association;
+	
+    //there will be one more many assessor assessing this artifact
+    @OneToMany(mappedBy = "artifact",
+            cascade = { CascadeType.MERGE, CascadeType.PERSIST })
+    private List<Assessment> assessments;
 
 	public Long getId() {
 		return id;
@@ -60,6 +78,22 @@ public class Artifact implements Serializable {
 
 	public void setEndpoint(String endpoint) {
 		this.endpoint = endpoint;
+	}
+
+	public Association getAssociation() {
+		return association;
+	}
+
+	public void setAssociation(Association association) {
+		this.association = association;
+	}
+
+	public List<Assessment> getAssessments() {
+		return assessments;
+	}
+
+	public void setAssessments(List<Assessment> assessments) {
+		this.assessments = assessments;
 	}
 	
 }
