@@ -44,8 +44,8 @@ public class Task implements Serializable {
     private User assessor;
     
     @ManyToOne
-    @JoinColumn(name ="rubric_id")
-    private Rubric rubric;
+    @JoinColumn(name ="association_id")
+    private Association association;
     
     @Column(name = "due_date")
     private Calendar dueDate;
@@ -97,12 +97,12 @@ public class Task implements Serializable {
 		this.assessor = assessor;
 	}
 
-	public Rubric getRubric() {
-		return rubric;
+	public Association getAssociation() {
+		return association;
 	}
 
-	public void setRubric(Rubric rubric) {
-		this.rubric = rubric;
+	public void setAssociation(Association association) {
+		this.association = association;
 	}
 
 	public List<Assessment> getAssessments() {
