@@ -31,10 +31,13 @@ public class Assessment implements Serializable {
     @JoinColumn(name = "assesor_id")
     private User assessor;
     
+    //which artifact this assessment assesses
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "artifact_id")
     private Artifact artifact;
     
+    //the assessment is under this association
     @ManyToOne
     @JoinColumn(name = "association_id")
     private Association association;
@@ -94,15 +97,13 @@ public class Assessment implements Serializable {
 
     }
 
-    public Long getId()
-    {
-        return id;
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public void setId( Long id )
-    {
-        this.id = id;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
 	public User getAssessor() {
 		return assessor;
@@ -110,64 +111,6 @@ public class Assessment implements Serializable {
 
 	public void setAssessor(User assessor) {
 		this.assessor = assessor;
-	}
-
-	public List<Rating> getRatings()
-    {
-        return ratings;
-    }
-
-    public void setRatings( List<Rating> ratings )
-    {
-        this.ratings = ratings;
-    }
-
-    public String getComments()
-    {
-        return comments;
-    }
-
-    public void setComments( String comments )
-    {
-        this.comments = comments;
-    }
-
-    public Date getDate()
-    {
-        return date;
-    }
-
-    public void setDate( Date date )
-    {
-        this.date = date;
-    }
-
-    public boolean isCompleted()
-    {
-        return completed;
-    }
-
-    public void setCompleted( boolean completed )
-    {
-        this.completed = completed;
-    }
-
-    public boolean isDeleted()
-    {
-        return deleted;
-    }
-
-    public void setDeleted( boolean deleted )
-    {
-        this.deleted = deleted;
-    }
-
-	public Task getTask() {
-		return task;
-	}
-
-	public void setTask(Task task) {
-		this.task = task;
 	}
 
 	public Artifact getArtifact() {
@@ -184,6 +127,54 @@ public class Assessment implements Serializable {
 
 	public void setAssociation(Association association) {
 		this.association = association;
+	}
+
+	public Task getTask() {
+		return task;
+	}
+
+	public void setTask(Task task) {
+		this.task = task;
+	}
+
+	public List<Rating> getRatings() {
+		return ratings;
+	}
+
+	public void setRatings(List<Rating> ratings) {
+		this.ratings = ratings;
+	}
+
+	public String getComments() {
+		return comments;
+	}
+
+	public void setComments(String comments) {
+		this.comments = comments;
+	}
+
+	public Date getDate() {
+		return date;
+	}
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+
+	public boolean isCompleted() {
+		return completed;
+	}
+
+	public void setCompleted(boolean completed) {
+		this.completed = completed;
+	}
+
+	public boolean isDeleted() {
+		return deleted;
+	}
+
+	public void setDeleted(boolean deleted) {
+		this.deleted = deleted;
 	}
 
 }

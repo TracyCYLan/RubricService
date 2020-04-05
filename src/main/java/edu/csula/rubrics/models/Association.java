@@ -34,10 +34,15 @@ public class Association implements Serializable {
 	@Column(nullable = false)
 	private String endpoint;
 
+	//which rubric we are going to grade the artifacts under this association
     @ManyToOne
     @JoinColumn(name = "rubric_id")
     private Rubric rubric;
-	
+    
+    //this association has a lot of artifacts
+    @OneToMany(mappedBy = "association")
+    private List<Artifact> artifacts;
+
 	public Long getId() {
 		return id;
 	}
@@ -69,7 +74,7 @@ public class Association implements Serializable {
 	public void setEndpoint(String endpoint) {
 		this.endpoint = endpoint;
 	}
-	
+
 	public Rubric getRubric() {
 		return rubric;
 	}
@@ -77,5 +82,13 @@ public class Association implements Serializable {
 	public void setRubric(Rubric rubric) {
 		this.rubric = rubric;
 	}
-	
+
+	public List<Artifact> getArtifacts() {
+		return artifacts;
+	}
+
+	public void setArtifacts(List<Artifact> artifacts) {
+		this.artifacts = artifacts;
+	}
+		
 }

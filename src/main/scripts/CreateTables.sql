@@ -1,8 +1,9 @@
-    create table artifacts (
+	create table artifacts (
        id bigint not null,
         endpoint varchar(255) not null,
         name varchar(255) not null,
         type varchar(255) not null,
+        association_id bigint,
         primary key (id)
     ) engine=InnoDB;
 
@@ -105,7 +106,7 @@
        id bigint not null,
         count integer not null,
         value varchar(255) not null,
-        FULLTEXT(value),
+		FULLTEXT(value),
         primary key (id)
     ) engine=InnoDB;
 
@@ -115,7 +116,7 @@
         name varchar(255) not null,
         type varchar(255) not null,
         assessor_id bigint,
-        rubric_id bigint,
+        association_id bigint,
         primary key (id)
     ) engine=InnoDB;
 
@@ -135,6 +136,11 @@
 
     alter table users 
        add constraint UK_r43af9ap4edm43mmtq01oddj6 unique (username);
+
+    alter table artifacts 
+       add constraint FKi3xd5usajkpbuimva0k8rv7sh 
+       foreign key (association_id) 
+       references associations (id);
 
     alter table assessment_ratings 
        add constraint FKpf7rbs9siysidpavy0kvci08m 
@@ -207,6 +213,6 @@
        references users (id);
 
     alter table tasks 
-       add constraint FKcnegrugc9fvfwtdrmeb65agp3 
-       foreign key (rubric_id) 
-       references rubrics (id);
+       add constraint FKqur35h4e8e75nx2upqskimavb 
+       foreign key (association_id) 
+       references associations (id);
