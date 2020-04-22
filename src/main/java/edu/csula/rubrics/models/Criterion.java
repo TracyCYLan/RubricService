@@ -35,6 +35,14 @@ public class Criterion implements Serializable {
 
 	@Column(nullable = false)
 	private String description;
+	
+    //e.g., Canvas
+    @Column(name = "external_source")
+    private String externalSource; 
+    
+    //outcome id in the externalSource
+    @Column(name = "external_id")
+    private String externalId;
 
 	private boolean deleted;
 
@@ -92,6 +100,22 @@ public class Criterion implements Serializable {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String getExternalSource() {
+		return externalSource;
+	}
+
+	public void setExternalSource(String externalSource) {
+		this.externalSource = externalSource;
+	}
+
+	public String getExternalId() {
+		return externalId;
+	}
+
+	public void setExternalId(String externalId) {
+		this.externalId = externalId;
 	}
 
 	public boolean isDeleted() {

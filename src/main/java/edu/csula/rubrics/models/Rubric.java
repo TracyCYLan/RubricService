@@ -34,6 +34,14 @@ public class Rubric implements Serializable {
 
     private String description;
 
+    //e.g., Canvas
+    @Column(name = "external_source")
+    private String externalSource; 
+    
+    //rubric id in the externalSource
+    @Column(name = "external_id")
+    private String externalId;
+    
     /* 
      * Each rubric has a number of criteria. 
      * Each criterion can be reused by different rubrics.
@@ -120,6 +128,22 @@ public class Rubric implements Serializable {
     {
         this.description = description;
     }
+
+	public String getExternalSource() {
+		return externalSource;
+	}
+
+	public void setExternalSource(String externalSource) {
+		this.externalSource = externalSource;
+	}
+
+	public String getExternalId() {
+		return externalId;
+	}
+
+	public void setExternalId(String externalId) {
+		this.externalId = externalId;
+	}
 
 	public List<Criterion> getCriteria() {
 		return criteria;

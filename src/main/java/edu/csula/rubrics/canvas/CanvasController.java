@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import edu.csula.rubrics.canvas.dao.CanvasDao;
 import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Rubric;
@@ -54,6 +55,11 @@ public class CanvasController {
 
 	@Autowired
 	CriterionDao criterionDao;
+
+	@Autowired
+	CanvasDao canvasDao;
+
+	final String EXTSOURCE = "Canvas";
 
 	// get ALL courses
 	@RequestMapping(value = "/courses", method = RequestMethod.GET, produces = "application/json")
@@ -138,37 +144,49 @@ public class CanvasController {
 			JSONParser parser = new JSONParser();
 			JSONObject rubricJson = (JSONObject) parser.parse(response.toString());
 			String rubric_name = rubricJson.get("title").toString();
-			rubric.setName(rubric_name);
-			rubric = rubricDao.saveRubric(rubric);
-			List<Criterion> criteria = rubric.getCriteria();
-			// create criteria under rubric
-			JSONArray criteriaArray = (JSONArray) rubricJson.get("data");
-			for (int i = 0; i < criteriaArray.size(); i++) {
-				JSONObject criterionJson = (JSONObject) parser.parse(criteriaArray.get(i).toString());
-				String criterion_name = criterionJson.get("description").toString();
-				String criterion_desc = criterionJson.get("long_description").toString();
-				Criterion criterion = new Criterion();
-				criterion.setName(criterion_name);
-				criterion.setDescription(criterion_desc);
-				criterion = criterionDao.saveCriterion(criterion);
-				criteria.add(criterion);
+			// first check if this rubric is imported before ...
+			String rubric_extid = rubricJson.get("id").toString();
+			long duplId = canvasDao.checkRubricExists(EXTSOURCE, rubric_extid); // the id which has this imported rubric
+			if (duplId > -1) // -1 means never import
+				return duplId;
+			else 
+			{
+				rubric.setName(rubric_name);
+				rubric.setExternalSource(EXTSOURCE);
+				rubric.setExternalId(rubric_extid);
+				// here is to get current user id
+				// then we can uncomment below
+//				rubric.setCreator(ID); //I think creator type should be also extUserId and extSource? 
+				rubric = rubricDao.saveRubric(rubric);
+				List<Criterion> criteria = rubric.getCriteria();
+				// create criteria under rubric
+				JSONArray criteriaArray = (JSONArray) rubricJson.get("data");
+				for (int i = 0; i < criteriaArray.size(); i++) {
+					JSONObject criterionJson = (JSONObject) parser.parse(criteriaArray.get(i).toString());
+					String criterion_name = criterionJson.get("description").toString();
+					String criterion_desc = criterionJson.get("long_description").toString();
+					Criterion criterion = new Criterion();
+					// criterion inside rubric is ok to be duplicated, so no need to set extsource
+					// and extid here
+					criterion.setName(criterion_name);
+					criterion.setDescription(criterion_desc);
+					criterion.setReusable(false);
+					criterion = criterionDao.saveCriterion(criterion);
+					criteria.add(criterion);
 
-				// create ratings under criterion
-				JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
-				for (int j = 0; j < ratingsArray.size(); j++) {
-					JSONObject ratingJson = (JSONObject) parser.parse(ratingsArray.get(j).toString());
-					String rating_desc = ratingJson.get("description").toString();
-					double rating_value = Double.parseDouble(ratingJson.get("points").toString());
-					if (ratingJson.get("id").toString().charAt(0) == '_') // see if rating has id or just temp id
-					{
-						criterion.setReusable(true);
+					// create ratings under criterion
+					JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
+					for (int j = 0; j < ratingsArray.size(); j++) {
+						JSONObject ratingJson = (JSONObject) parser.parse(ratingsArray.get(j).toString());
+						String rating_desc = ratingJson.get("description").toString();
+						double rating_value = Double.parseDouble(ratingJson.get("points").toString());
+						Rating rating = new Rating();
+						rating.setCriterion(criterion);
+						rating.setDescription(rating_desc);
+						rating.setValue(rating_value);
+
+						rating = criterionDao.saveRating(rating);
 					}
-					Rating rating = new Rating();
-					rating.setCriterion(criterion);
-					rating.setDescription(rating_desc);
-					rating.setValue(rating_value);
-
-					rating = criterionDao.saveRating(rating);
 				}
 			}
 
@@ -184,7 +202,8 @@ public class CanvasController {
 	@RequestMapping(value = "/courses/{cid}/criteria", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getCriteria(@PathVariable long cid) throws IOException {
 		List<String> res = new ArrayList<>();
-		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/outcome_group_links");
+		URL urlForGetRequest = new URL(
+				"https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/outcome_group_links");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 		String token = "11590~VWZMtWiJtlWmE8St8vW8UBmQOoLpX0nhjSUMXZhbPC8eXNE5Pk63FuvNLzVRNYbh";
@@ -234,22 +253,31 @@ public class CanvasController {
 			JSONObject criterionJson = (JSONObject) parser.parse(response.toString());
 			String criterion_name = criterionJson.get("title").toString();
 			String criterion_desc = criterionJson.get("description").toString();
-			criterion.setName(criterion_name);
-			criterion.setDescription(criterion_desc);
-			criterion.setReusable(true); // since the outcome we can import from Canvas is definitely reusable
-			criterion = criterionDao.saveCriterion(criterion);
-			// create ratings under criterion
-			JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
-			for (int j = 0; j < ratingsArray.size(); j++) {
-				JSONObject ratingJson = (JSONObject) parser.parse(ratingsArray.get(j).toString());
-				String rating_desc = ratingJson.get("description").toString();
-				double rating_value = Double.parseDouble(ratingJson.get("points").toString());
-				Rating rating = new Rating();
-				rating.setCriterion(criterion);
-				rating.setDescription(rating_desc);
-				rating.setValue(rating_value);
+			// first check if we import this criterion before:
+			String criterion_extid = criterionJson.get("id").toString();
+			long duplId = canvasDao.checkCriterionExists(EXTSOURCE, criterion_extid); // the id which has this imported c
+			if (duplId > -1)
+				return duplId;
+			else {
+				criterion.setName(criterion_name);
+				criterion.setDescription(criterion_desc);
+				criterion.setExternalId(criterion_extid);
+				criterion.setExternalSource(EXTSOURCE);
+				criterion.setReusable(true); // since the outcome we can import from Canvas is definitely reusable
+				criterion = criterionDao.saveCriterion(criterion);
+				// create ratings under criterion
+				JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
+				for (int j = 0; j < ratingsArray.size(); j++) {
+					JSONObject ratingJson = (JSONObject) parser.parse(ratingsArray.get(j).toString());
+					String rating_desc = ratingJson.get("description").toString();
+					double rating_value = Double.parseDouble(ratingJson.get("points").toString());
+					Rating rating = new Rating();
+					rating.setCriterion(criterion);
+					rating.setDescription(rating_desc);
+					rating.setValue(rating_value);
 
-				rating = criterionDao.saveRating(rating);
+					rating = criterionDao.saveRating(rating);
+				}
 			}
 
 		} else {
