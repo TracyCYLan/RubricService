@@ -36,11 +36,13 @@
 
     create table criteria (
        id bigint not null,
-        deleted bit not null,
+		name varchar(255) not null,
         description varchar(255) not null,
-        name varchar(255) not null,
+        external_source varchar(255),
+        external_id varchar(255),
         publish_date datetime(6),
         reusable bit not null,
+        deleted bit not null,
         FULLTEXT(name,description),
         primary key (id)
     ) engine=InnoDB;
@@ -90,13 +92,15 @@
 
     create table rubrics (
        id bigint not null,
-        deleted bit not null,
+        name varchar(255) not null,
         description varchar(255),
+        external_source varchar(255),
+        external_id varchar(255),
         public bit not null,
         last_updated_date timestamp not null default current_timestamp,
-        name varchar(255) not null,
-        obsolete bit not null,
         publish_date datetime(6),
+        deleted bit not null,
+        obsolete bit not null,
         creator_id bigint,
         FULLTEXT(name,description),
         primary key (id)
