@@ -5,6 +5,7 @@ target/
 !**/src/test/**
 
 application.properties
+developer_key.properties
 
 ### STS ###
 .apt_generated
