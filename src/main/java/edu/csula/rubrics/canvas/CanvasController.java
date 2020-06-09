@@ -6,7 +6,9 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -18,6 +20,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -61,6 +64,51 @@ public class CanvasController {
 
 	final String EXTSOURCE = "Canvas";
 
+
+	
+
+	@RequestMapping(value = "/oauth_callback", method = RequestMethod.GET, produces = "application/json")
+	public void oauthCallback (@RequestParam String code,@RequestParam String state) throws IOException {
+		System.out.println("code: "+code);
+		System.out.println("state: "+state);
+		if(!state.equals("YYY"))
+			return;
+		//get developer ID and Key
+		String dkID="";
+		String dkKey="";
+		try (InputStream input = new FileInputStream("src/main/resources/developer_key.properties")) {
+            Properties prop = new Properties();
+            prop.load(input);
+            dkID = prop.getProperty("id");
+            dkKey = prop.getProperty("key");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+		if(dkID.length()==0 ||dkKey.length()==0)
+			return;
+		
+		List<String> res = new ArrayList<>();
+		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/login/oauth2/token");
+		String readLine = null;
+		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
+
+		connection.setRequestProperty("Content-Type", "application/json");
+		connection.setRequestMethod("POST");
+		int responseCode = connection.getResponseCode();
+		if (responseCode == HttpURLConnection.HTTP_OK) {
+			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			StringBuffer response = new StringBuffer();
+			while ((readLine = in.readLine()) != null) {
+				response.append(readLine);
+			}
+			in.close();
+			res.add(response.toString());
+		} else {
+			System.out.println("GET NOT WORKED " + responseCode);
+		}
+		
+	}
+		
 	// get ALL courses
 	@RequestMapping(value = "/courses", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getCourses() throws IOException {
@@ -149,8 +197,7 @@ public class CanvasController {
 			long duplId = canvasDao.checkRubricExists(EXTSOURCE, rubric_extid); // the id which has this imported rubric
 			if (duplId > -1) // -1 means never import
 				return duplId;
-			else 
-			{
+			else {
 				rubric.setName(rubric_name);
 				rubric.setExternalSource(EXTSOURCE);
 				rubric.setExternalId(rubric_extid);
@@ -255,7 +302,8 @@ public class CanvasController {
 			String criterion_desc = criterionJson.get("description").toString();
 			// first check if we import this criterion before:
 			String criterion_extid = criterionJson.get("id").toString();
-			long duplId = canvasDao.checkCriterionExists(EXTSOURCE, criterion_extid); // the id which has this imported c
+			long duplId = canvasDao.checkCriterionExists(EXTSOURCE, criterion_extid); // the id which has this imported
+																						// c
 			if (duplId > -1)
 				return duplId;
 			else {
