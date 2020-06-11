@@ -66,8 +66,7 @@ public class CanvasController {
 
 
 	
-
-	@RequestMapping(value = "/oauth_callback", method = RequestMethod.GET, produces = "application/json")
+	@GetMapping("/oauth_callback/{code}/{state}")
 	public void oauthCallback (@RequestParam String code,@RequestParam String state) throws IOException {
 		System.out.println("code: "+code);
 		System.out.println("state: "+state);
