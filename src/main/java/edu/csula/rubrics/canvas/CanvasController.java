@@ -65,47 +65,48 @@ public class CanvasController {
 	final String EXTSOURCE = "Canvas";
 
 
-	
-	@GetMapping("/oauth_callback/{code}/{state}")
-	public void oauthCallback (@RequestParam String code,@RequestParam String state) throws IOException {
-		System.out.println("code: "+code);
-		System.out.println("state: "+state);
-		if(!state.equals("YYY"))
-			return;
-		//get developer ID and Key
-		String dkID="";
-		String dkKey="";
-		try (InputStream input = new FileInputStream("src/main/resources/developer_key.properties")) {
-            Properties prop = new Properties();
-            prop.load(input);
-            dkID = prop.getProperty("id");
-            dkKey = prop.getProperty("key");
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-		if(dkID.length()==0 ||dkKey.length()==0)
-			return;
-		
-		List<String> res = new ArrayList<>();
-		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/login/oauth2/token");
-		String readLine = null;
-		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-
-		connection.setRequestProperty("Content-Type", "application/json");
-		connection.setRequestMethod("POST");
-		int responseCode = connection.getResponseCode();
-		if (responseCode == HttpURLConnection.HTTP_OK) {
-			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			StringBuffer response = new StringBuffer();
-			while ((readLine = in.readLine()) != null) {
-				response.append(readLine);
-			}
-			in.close();
-			res.add(response.toString());
-		} else {
-			System.out.println("GET NOT WORKED " + responseCode);
-		}
-		
+	@RequestMapping(method = RequestMethod.GET, value= "/oauth_callback")
+	public void oauthCallback (@RequestParam Map<String, String> query) throws IOException {
+		System.out.println("code " + query.get("code"));
+        System.out.println("state " + query.get("state"));
+//		System.out.println("code: "+code);
+//		System.out.println("state: "+state);
+//		if(!state.equals("YYY"))
+//			return;
+//		//get developer ID and Key
+//		String dkID="";
+//		String dkKey="";
+//		try (InputStream input = new FileInputStream("src/main/resources/developer_key.properties")) {
+//            Properties prop = new Properties();
+//            prop.load(input);
+//            dkID = prop.getProperty("id");
+//            dkKey = prop.getProperty("key");
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
+//		if(dkID.length()==0 ||dkKey.length()==0)
+//			return;
+//		
+//		List<String> res = new ArrayList<>();
+//		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/login/oauth2/token");
+//		String readLine = null;
+//		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
+//
+//		connection.setRequestProperty("Content-Type", "application/json");
+//		connection.setRequestMethod("POST");
+//		int responseCode = connection.getResponseCode();
+//		if (responseCode == HttpURLConnection.HTTP_OK) {
+//			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+//			StringBuffer response = new StringBuffer();
+//			while ((readLine = in.readLine()) != null) {
+//				response.append(readLine);
+//			}
+//			in.close();
+//			res.add(response.toString());
+//		} else {
+//			System.out.println("GET NOT WORKED " + responseCode);
+//		}
+//		
 	}
 		
 	// get ALL courses
