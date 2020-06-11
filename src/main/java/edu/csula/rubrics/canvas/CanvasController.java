@@ -67,46 +67,57 @@ public class CanvasController {
 
 	@RequestMapping(method = RequestMethod.GET, value= "/oauth_callback")
 	public void oauthCallback (@RequestParam Map<String, String> query) throws IOException {
-		System.out.println("code " + query.get("code"));
-        System.out.println("state " + query.get("state"));
-//		System.out.println("code: "+code);
-//		System.out.println("state: "+state);
-//		if(!state.equals("YYY"))
-//			return;
-//		//get developer ID and Key
-//		String dkID="";
-//		String dkKey="";
-//		try (InputStream input = new FileInputStream("src/main/resources/developer_key.properties")) {
-//            Properties prop = new Properties();
-//            prop.load(input);
-//            dkID = prop.getProperty("id");
-//            dkKey = prop.getProperty("key");
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//        }
-//		if(dkID.length()==0 ||dkKey.length()==0)
-//			return;
-//		
-//		List<String> res = new ArrayList<>();
-//		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/login/oauth2/token");
-//		String readLine = null;
-//		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-//
-//		connection.setRequestProperty("Content-Type", "application/json");
-//		connection.setRequestMethod("POST");
-//		int responseCode = connection.getResponseCode();
-//		if (responseCode == HttpURLConnection.HTTP_OK) {
-//			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-//			StringBuffer response = new StringBuffer();
-//			while ((readLine = in.readLine()) != null) {
-//				response.append(readLine);
-//			}
-//			in.close();
-//			res.add(response.toString());
-//		} else {
-//			System.out.println("GET NOT WORKED " + responseCode);
-//		}
-//		
+		String code = query.get("code");
+        String state = query.get("state");
+		if(!state.equals("YYY"))
+			return;
+		//get developer ID and Key
+		String dkID="";
+		String dkKey="";
+		try (InputStream input = new FileInputStream("src/main/resources/developer_key.properties")) {
+            Properties prop = new Properties();
+            prop.load(input);
+            dkID = prop.getProperty("id");
+            dkKey = prop.getProperty("key");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+		if(dkID.length()==0 ||dkKey.length()==0)
+			return;
+		
+		URL url = new URL("https://calstatela.instructure.com:443/login/oauth2/token");
+		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+		/*
+		 * {
+			    "grant_type": "authorization_code",
+			    "client_id": 115900000000000014,
+			    "client_secret": "pgPlqovqaa5JMq4ZUOBU6n3YE1SNxeJtj3wUGFtmloLWDVmAx1ZZA3kTTnTgZPGd",
+			    "redirect_uri": "http://ecst-csproj2.calstatela.edu:6350/alice-rubrics/canvas/oauth_callback",
+			    "code": ""
+			}
+		 */
+		conn.setRequestProperty("Content-Type", "application/json; utf-8");
+		conn.setRequestMethod("POST");
+		conn.setRequestProperty("Accept", "application/json");
+		conn.setDoOutput(true);
+		String jsonInputString = "{ \"grant_type\": \"authorization_code\","
+								+ " \"client_id\":" + dkID +","
+								+ " \"client_secret\": \"" + dkKey +"\","
+								+ " \"redirect_uri\": \"http://ecst-csproj2.calstatela.edu:6350/alice-rubrics/canvas/oauth_callback\","
+								+ " \"code\": \"" + code + "\""
+								+ " } ";
+		
+		try(BufferedReader br = new BufferedReader(
+				  new InputStreamReader(conn.getInputStream(), "utf-8"))) {
+				    StringBuilder response = new StringBuilder();
+				    String responseLine = null;
+				    while ((responseLine = br.readLine()) != null) {
+				        response.append(responseLine.trim());
+				    }
+				    System.out.println(response.toString());
+				}
+		
 	}
 		
 	// get ALL courses
@@ -117,7 +128,7 @@ public class CanvasController {
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 		String token = "11590~VWZMtWiJtlWmE8St8vW8UBmQOoLpX0nhjSUMXZhbPC8eXNE5Pk63FuvNLzVRNYbh";
-
+	
 		connection.setRequestProperty("Authorization", "Bearer " + token);
 		connection.setRequestProperty("Content-Type", "application/json");
 		connection.setRequestMethod("GET");
