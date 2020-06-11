@@ -67,10 +67,8 @@ public class CanvasController {
 
 	@RequestMapping(method = RequestMethod.GET, value= "/oauth_callback")
 	public void oauthCallback (@RequestParam Map<String, String> query) throws IOException {
-		System.out.println("code " + query.containsKey("code"));
-        System.out.println("state " + query.containsKey("state"));
-        for(String key: query.keySet())
-        	System.out.println(key);
+		System.out.println("code " + query.get("code"));
+        System.out.println("state " + query.get("state"));
 //		System.out.println("code: "+code);
 //		System.out.println("state: "+state);
 //		if(!state.equals("YYY"))
