@@ -88,15 +88,7 @@ public class CanvasController {
 		URL url = new URL("https://calstatela.instructure.com:443/login/oauth2/token");
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-		/*
-		 * {
-			    "grant_type": "authorization_code",
-			    "client_id": 115900000000000014,
-			    "client_secret": "pgPlqovqaa5JMq4ZUOBU6n3YE1SNxeJtj3wUGFtmloLWDVmAx1ZZA3kTTnTgZPGd",
-			    "redirect_uri": "http://ecst-csproj2.calstatela.edu:6350/alice-rubrics/canvas/oauth_callback",
-			    "code": ""
-			}
-		 */
+
 		conn.setRequestProperty("Content-Type", "application/json; utf-8");
 		conn.setRequestMethod("POST");
 		conn.setRequestProperty("Accept", "application/json");
