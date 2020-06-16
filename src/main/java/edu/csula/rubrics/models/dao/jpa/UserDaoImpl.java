@@ -45,12 +45,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public User getUserByUsername( String username )
     {
-        // This method is mainly used by the security code which usually needs
-        // both the user credentials (i.e. username and password) and the
-        // granted authorities (i.e. roles), so here we load the roles
-        // collection "eagerly" using a join fetch to avoid a second query.
-        String query = "from User user left join fetch user.roles "
-            + "where lower(username) = :username";
+        String query = "from User where username = :username";
 
         List<User> users = entityManager.createQuery( query, User.class )
             .setParameter( "username", username.toLowerCase() )
