@@ -47,7 +47,23 @@ public class UserController {
 	public List<User> getUsers(ModelMap models) {
 		return userDao.getAllUsers();
 	}
-
+	
+	//register
+	@PostMapping("/register")
+	@ResponseStatus(HttpStatus.CREATED)
+	public Long addUser(@RequestBody User user) {
+		user = userDao.saveUser(user);
+		return user.getId();
+	}
+	//login
+	@PostMapping("/login")
+	public Long getUser(@RequestBody User user) {
+		User u = userDao.getUserByUsername(user.getUsername());
+		if(u==null||!u.getPassword().equals(user.getPassword()))
+			return (long)-1;
+		
+		return u.getId();
+	} 
 //	// get this rubric
 //	@GetMapping("/{id}")
 //	public Rubric getRubric(@PathVariable Long id) {
