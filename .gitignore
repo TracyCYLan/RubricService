@@ -6,6 +6,7 @@ target/
 
 application.properties
 developer_key.properties
+src/main/java/edu/csula/rubrics/canvas/
 
 ### STS ###
 .apt_generated
