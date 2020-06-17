@@ -18,21 +18,20 @@ public class User implements Serializable {
 	@GeneratedValue
 	private Long id;
 	
-//	@JsonIgnore
-    @Column(nullable = false, unique = true)
+    @Column
+//    (nullable = false, unique = true)
     private String cin;
 	
 	@Column(nullable = false, unique = true)
     private String username;
 
-//    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name")
     private String lastName;
     
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name")
     private String firstName;
 
     @JsonIgnore

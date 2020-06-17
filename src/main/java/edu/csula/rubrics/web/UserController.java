@@ -7,9 +7,13 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
+
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,6 +37,8 @@ import edu.csula.rubrics.models.User;
 import edu.csula.rubrics.models.dao.CriterionDao;
 import edu.csula.rubrics.models.dao.RubricDao;
 import edu.csula.rubrics.models.dao.UserDao;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -47,23 +53,42 @@ public class UserController {
 	public List<User> getUsers(ModelMap models) {
 		return userDao.getAllUsers();
 	}
-	
-	//register
+
+	// register
 	@PostMapping("/register")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long addUser(@RequestBody User user) {
+		System.out.println("name: "+user.getUsername());
+		System.out.println("pwd: "+user.getPassword());
 		user = userDao.saveUser(user);
 		return user.getId();
 	}
-	//login
+
+	// login
+	// return JWT token contains user's ID (not username)
 	@PostMapping("/login")
-	public Long getUser(@RequestBody User user) {
+	public String getUser(@RequestBody User user) {
 		User u = userDao.getUserByUsername(user.getUsername());
-		if(u==null||!u.getPassword().equals(user.getPassword()))
-			return (long)-1;
-		
-		return u.getId();
-	} 
+		if (u == null || !u.getPassword().equals(user.getPassword()))
+			return "";
+		String token = getJWTToken(u.getId().toString());
+		return token;
+	}
+
+	private String getJWTToken(String userId) {
+		String secretKey = "mySecretKey";
+		List<GrantedAuthority> grantedAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList("ROLE_USER");
+
+		String token = Jwts.builder().setId("softtekJWT").setSubject(userId)
+				.claim("authorities",
+						grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
+				.setIssuedAt(new Date(System.currentTimeMillis()))
+				.setExpiration(new Date(System.currentTimeMillis() + 600000))
+				.signWith(SignatureAlgorithm.HS512, secretKey.getBytes()).compact();
+
+		return "Bearer " + token;
+	}
+
 //	// get this rubric
 //	@GetMapping("/{id}")
 //	public Rubric getRubric(@PathVariable Long id) {
