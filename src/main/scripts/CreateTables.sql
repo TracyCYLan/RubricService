@@ -126,9 +126,9 @@
 
     create table users (
        id bigint not null,
-        cin varchar(255) not null,
-        first_name varchar(255) not null,
-        last_name varchar(255) not null,
+        cin varchar(255),
+        first_name varchar(255),
+        last_name varchar(255),
         middle_name varchar(255),
         password varchar(255) not null,
         username varchar(255) not null,
