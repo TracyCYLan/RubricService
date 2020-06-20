@@ -46,7 +46,9 @@ public class RubricsApplication {
 					.addFilterAfter(new JWTAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class)
 					.authorizeRequests().antMatchers(HttpMethod.POST, "/user/login").permitAll()
 					.antMatchers(HttpMethod.POST, "/user/register").permitAll()
-					.antMatchers(HttpMethod.GET, "/rubric/**").permitAll().anyRequest().authenticated();
+					.antMatchers(HttpMethod.GET, "/user/**").permitAll()
+					.antMatchers(HttpMethod.GET, "/rubric/**").permitAll()
+					.anyRequest().authenticated();
 		}
 
 		// solve the error: has been blocked by CORS policy
@@ -55,7 +57,8 @@ public class RubricsApplication {
 			CorsConfiguration configuration = new CorsConfiguration();
 			configuration.setAllowCredentials(true);
 			configuration.setAllowedHeaders(Arrays.asList("Access-Control-Allow-Headers","Access-Control-Allow-Origin","Access-Control-Request-Method", "Access-Control-Request-Headers","Origin","Cache-Control", "Content-Type", "Authorization"));
-			configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+//			configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+			configuration.setAllowedOrigins(Arrays.asList("http://alice.cysun.org"));
 			configuration.setAllowedMethods(Arrays.asList("GET", "POST"));
 			UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 			source.registerCorsConfiguration("/**", configuration);
