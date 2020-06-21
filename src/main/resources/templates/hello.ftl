@@ -7,6 +7,7 @@
 </head>
 <body>
     <h2 class="hello-title">Hello ${name}!</h2>
+    <a href="http://localhost:3000/">click</a>
     <script src="/js/main.js"></script>
 </body>
 </html>
