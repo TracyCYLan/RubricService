@@ -80,9 +80,9 @@ public class UserController {
 		
 		String token = getJWTToken(u);
         Cookie cookie = new Cookie("rubric-alice-token", token);
-//        cookie.setPath("/");
-//        cookie.setHttpOnly(false);
-//        res.setHeader("Access-Control-Allow-Credentials", "true");
+        cookie.setPath("/");
+        cookie.setHttpOnly(false);
+        res.setHeader("Access-Control-Allow-Credentials", "true");
         res.addCookie(cookie);
         return ResponseEntity.ok().body(token);
     }
