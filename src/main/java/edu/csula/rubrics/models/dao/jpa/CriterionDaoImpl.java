@@ -62,17 +62,21 @@ public class CriterionDaoImpl implements CriterionDao {
 	}
 
 	// search criteria
+	//current problem: if the criteria doesn't have ratings nor tags; it won't show in the result at all even if it matches.
 	@Override
 	public List<Criterion> searchCriteria(String text) {
 		if (text == null || text.trim().length() == 0)
 			return null;
 		text = text.trim();
-		String query = "select c.* from criteria c " + "inner join ratings r on r.criterion_id = c.id "
-				+ "inner join criterion_tags ct on ct.criterion_id = c.id " + "inner join tags t on t.id = ct.tag_id "
-				+ "where match(c.name,c.description) against(:text in boolean mode) "
-				+ "or match(t.value) against(:text IN BOOLEAN MODE) "
-				+ "or match(r.description) against (:text IN BOOLEAN MODE) " + "and c.deleted = false \r\n"
-				+ "group by c.id";
+		String query = "SELECT c.* FROM criteria c " 
+				+ "INNER JOIN ratings r on r.criterion_id = c.id "
+				+ "INNER JOIN criterion_tags ct on ct.criterion_id = c.id " 
+				+ "INNER JOIN tags t on t.id = ct.tag_id "
+				+ "WHERE MATCH(c.name,c.description) AGAINST(:text in boolean mode) "
+				+ "OR MATCH(t.value) AGAINST(:text IN BOOLEAN MODE) "
+				+ "OR MATCH(r.description) AGAINST(:text IN BOOLEAN MODE) " 
+				+ "AND c.deleted = false "
+				+ "GROUP BY c.id";
 		text = text.replace(" ", "*");
 		return entityManager.createNativeQuery(query, Criterion.class).setParameter("text", text + "*").getResultList();
 
