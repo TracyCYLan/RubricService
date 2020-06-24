@@ -23,6 +23,9 @@
 	<div class="container">
 	<form action="http://localhost:3000/canvas/getCode/${code}">
     	<button type"submit" class="btn btn-primary">Back to Rubric Service</button>
+    	<script type="text/javascript">
+    		sessionStorage.setItem('test', 1);
+		</script> 
     </form>
     </div>
 </body>
