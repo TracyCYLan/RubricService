@@ -40,11 +40,12 @@ public class CanvasController {
 	}
 
 	
-	@GetMapping("/oauth_code")
+	@GetMapping("/oauth_callback")
 	public String getCode(Model model,
 			@RequestParam(value = "code", required = false, defaultValue = "") String code) {
-		model.addAttribute("code", code);
-		return "oauth_code";
+		String token = "oauth_code token is here ";
+		model.addAttribute("token", token+code);
+		return "oauth_callback";
 	}
 	
 	// return userid if already login

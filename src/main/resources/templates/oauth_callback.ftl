@@ -14,17 +14,17 @@
 	<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
 			<a class="navbar-brand">Rubric Service</a>
 			<button class="navbar-toggler" type="button" data-toggle="collapse"
-				data-target="#navbarsExampleDefault"
+				data-target="#navbarsExampleDefault"s
 				aria-controls="navbarsExampleDefault" aria-expanded="false"
 				aria-label="Toggle navigation">
 				<span class="navbar-toggler-icon"></span>
 			</button>
 	</nav>
 	<div class="container">
-	<form action="http://localhost:3000/canvas/getCode/${code}">
+	<form action="http://localhost:3000">
     	<button type"submit" class="btn btn-primary">Back to Rubric Service</button>
     	<script type="text/javascript">
-    		sessionStorage.setItem('test', 1);
+    		sessionStorage.setItem('canvasToken', `${token}`);
 		</script> 
     </form>
     </div>

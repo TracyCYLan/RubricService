@@ -1,19 +1,18 @@
-package edu.csula.rubrics.canvas;
-
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-@CrossOrigin(origins = "http://localhost:3000", maxAge = 3600)
-@RestController
-@RequestMapping("/canvasRest")
-public class CanvasRestController {
-
-	@GetMapping("/access_token")
-	public String canvasToken(@RequestParam String code) {
-		return "I'm token";
+//package edu.csula.rubrics.canvas;
+//
+//import org.springframework.web.bind.annotation.CrossOrigin;
+//import org.springframework.web.bind.annotation.GetMapping;
+//import org.springframework.web.bind.annotation.RequestMapping;
+//import org.springframework.web.bind.annotation.RequestParam;
+//import org.springframework.web.bind.annotation.RestController;
+//
+//@CrossOrigin(origins = "http://localhost:3000", maxAge = 3600)
+//@RestController
+//@RequestMapping("/canvasRest")
+//public class CanvasRestController {
+//
+//	@GetMapping("/access_token")
+//	public String canvasToken(@RequestParam String code) {
 //		//get developer key id and secret
 //		String dkID = "";
 //		String dkKey = "";
@@ -66,6 +65,6 @@ public class CanvasRestController {
 //			e.printStackTrace();
 //		}
 //		return token;
-	}
-
-}
+//	}
+//
+//}
