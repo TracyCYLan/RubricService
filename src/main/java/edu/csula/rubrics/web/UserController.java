@@ -121,13 +121,5 @@ public class UserController {
 //		
 //	}
 	
-//	// get this rubric
-//	@GetMapping("/{id}")
-//	public Rubric getRubric(@PathVariable Long id) {
-//		Rubric rubric = rubricDao.getRubric(id);
-//		if (rubric == null)
-//			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Rubric not found");
-//		return rubric;
-//	}
 
 }
