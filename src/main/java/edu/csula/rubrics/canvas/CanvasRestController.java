@@ -202,9 +202,9 @@ public class CanvasRestController {
 		return rubric.getId();
 	}
 
-	// get rubrics under certain course
+	// get outcomes under certain course
 	// GET /v1/courses/{course_id}/outcome_group_links
-	@RequestMapping(value = "/courses/{cid}/criteria", method = RequestMethod.GET, produces = "application/json")
+	@RequestMapping(value = "/courses/{cid}/criteria/{token}", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getCriteria(@PathVariable long cid, @RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException {
 		if(token.length()==0)
 			return null;
@@ -227,7 +227,7 @@ public class CanvasRestController {
 			in.close();
 			res.add(response.toString());
 		} else {
-			System.out.println("GET NOT WORKED " + responseCode);
+			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/outcome_group_links due to " + responseCode);
 		}
 		return res;
 	}
@@ -289,7 +289,7 @@ public class CanvasRestController {
 			}
 
 		} else {
-			System.out.println("GET NOT WORKED " + responseCode);
+			System.out.println("GET NOT WORKED - /api/v1/outcomes/:id due to " + responseCode);
 		}
 
 		return criterion.getId();
