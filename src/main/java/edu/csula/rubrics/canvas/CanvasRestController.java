@@ -87,7 +87,7 @@ public class CanvasRestController {
 			in.close();
 			res.add(response.toString());
 		} else {
-			System.out.println("GET NOT WORKED " + responseCode);
+			System.out.println("GET NOT WORKED - url:GET|/api/v1/courses due to " + responseCode);
 		}
 		return res;
 	}
@@ -116,7 +116,7 @@ public class CanvasRestController {
 			in.close();
 			res.add(response.toString());
 		} else {
-			System.out.println("GET NOT WORKED " + responseCode);
+			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics due to " + responseCode);
 		}
 		return res;
 	}
@@ -196,7 +196,7 @@ public class CanvasRestController {
 			}
 
 		} else {
-			System.out.println("GET NOT WORKED " + responseCode);
+			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id} due to " + responseCode);
 		}
 
 		return rubric.getId();
