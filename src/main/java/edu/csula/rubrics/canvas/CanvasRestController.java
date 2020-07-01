@@ -65,10 +65,13 @@ public class CanvasRestController {
 	final String EXTSOURCE = "Canvas";
 
 	// get ALL courses via given canvasToken
+	// calling url:GET|/api/v1/courses 
 	@RequestMapping(value = "/courses/{token}", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getCourses(@RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException {
+		
 		if(token.length()==0)
 			return null;
+		
 		List<String> res = new ArrayList<>();
 		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses");
 		String readLine = null;
@@ -92,12 +95,14 @@ public class CanvasRestController {
 		return res;
 	}
 
-	// get rubrics under certain course
-	// GET /v1/courses/{course_id}/rubrics
+	// get ALL rubrics under certain course
+	// calling url:GET|/v1/courses/{course_id}/rubrics
 	@RequestMapping(value = "/courses/{cid}/rubrics/{token}", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getRubrics(@PathVariable long cid,@RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException {
+		
 		if(token.length()==0)
 			return null;
+		
 		List<String> res = new ArrayList<>();
 		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics");
 		String readLine = null;
@@ -122,12 +127,14 @@ public class CanvasRestController {
 	}
 
 	// Get certain rubric under certain course and import it to our db
-	// GET /v1/courses/{course_id}/rubrics/{id}
+	// calling url:GET|/v1/courses/{course_id}/rubrics/{id}
 	@PostMapping("/courses/{cid}/rubrics/{rid}/{token}")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long importRubric(@PathVariable long cid, @PathVariable long rid,@RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException, ParseException {
+		
 		if(token.length()==0)
 			return (long)-1;
+		
 		URL urlForGetRequest = new URL(
 				"https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics/" + rid);
 		String readLine = null;
@@ -202,7 +209,7 @@ public class CanvasRestController {
 		return rubric.getId();
 	}
 
-	// get outcomes under certain course
+	// get ALL outcomes under certain course
 	// GET /v1/courses/{course_id}/outcome_group_links
 	@RequestMapping(value = "/courses/{cid}/criteria/{token}", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getCriteria(@PathVariable long cid, @RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException {
@@ -232,13 +239,17 @@ public class CanvasRestController {
 		return res;
 	}
 
-	// Get certain rubric under certain course and import it to our db
+	// Get certain criterion under certain course and import it to our db
 	// GET /api/v1/outcomes/:id
 	@PostMapping("/criterion/{id}/{token}")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long importCriterion(@PathVariable long id, @RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException, ParseException {
+		
+		//check if contains Canvas Token
 		if(token.length()==0)
 			return (long)-1;
+		
+		//get certain canvas outcome
 		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/outcomes/" + id);
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
@@ -293,5 +304,51 @@ public class CanvasRestController {
 		}
 
 		return criterion.getId();
+	}
+
+
+	// get criterion Id from RubricService, and the course Id, then convert it to JSON object then push it into Canvas DB
+	// url:POST|/api/v1/courses/:course_id/outcome_groups/:id/outcomes
+	@PostMapping("/criterion/{id}/export/course/{courseId}/outcome_groups/{outcome_group_Id}/{token}")
+	@ResponseStatus(HttpStatus.CREATED)
+	public void exportCriterion(@PathVariable long courseId, @PathVariable long outcome_group_Id, @PathVariable long id, @RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException, ParseException {
+		
+		if(token.length()==0)
+			return;
+
+		//1. convert Criterion to JSON Object that we planning to export to Canvas
+		Criterion c = criterionDao.getCriterion(id);
+		
+		//2. use url:POST|/api/v1/courses/:course_id/outcome_groups/:id/outcomes to ADD OUTCOME to Canvas
+		
+	}
+	
+	//return outcome groups under certain course
+	//calling url:GET|/api/v1/courses/:course_id/outcome_groups
+	@RequestMapping(value = "/courses/{cid}/outcome_groups/{token}", method = RequestMethod.GET, produces = "application/json")
+	public List<String> getOutcome_Groups(@PathVariable long cid, @RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException, ParseException{
+		if(token.length()==0)
+			return null;
+		
+		List<String> res = new ArrayList<>();
+		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/outcome_groups");
+		String readLine = null;
+		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
+		
+		connection.setRequestProperty("Authorization", "Bearer " + token);
+		connection.setRequestProperty("Content-Type", "application/json");
+		connection.setRequestMethod("GET");
+		int responseCode = connection.getResponseCode();
+		if (responseCode == HttpURLConnection.HTTP_OK) {
+			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			StringBuffer response = new StringBuffer();
+			while ((readLine = in.readLine()) != null) {
+				response.append(readLine);
+			}
+			res.add(response.toString());
+		} else {
+			System.out.println("GET NOT WORKED - url:GET|/api/v1/courses/:course_id/outcome_groups due to " + responseCode);
+		}
+		return res;
 	}
 }

@@ -22,7 +22,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 
-
 @Controller
 @RequestMapping("/canvas")
 public class CanvasController {
@@ -34,7 +33,8 @@ public class CanvasController {
 		return "hello";
 	}
 
-	//Canvas Redirect URI. get the code from Canvas and we will request Canvas to give us the access_token
+	// Canvas Redirect URI. get the code from Canvas and we will request Canvas to
+	// give us the access_token
 	@GetMapping("/oauth_callback")
 	public String getCode(Model model, @RequestParam(value = "code", required = false, defaultValue = "") String code) {
 		// get developer key id and secret
@@ -74,7 +74,7 @@ public class CanvasController {
 			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
 				throw new RuntimeException("Failed : HTTP error code : " + conn.getResponseCode());
 			}
-			//get the response JSON object String
+			// get the response JSON object String
 			String readLine = null;
 			BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 			StringBuffer response = new StringBuffer();
@@ -82,7 +82,7 @@ public class CanvasController {
 				response.append(readLine);
 			}
 
-			//convert String to JSON object and get the access_token  
+			// convert String to JSON object and get the access_token
 			JSONParser parser = new JSONParser();
 			JSONObject responseJson = (JSONObject) parser.parse(response.toString());
 			token = responseJson.get("access_token").toString();
@@ -95,7 +95,6 @@ public class CanvasController {
 		return "oauth_callback";
 	}
 
-	
 	// return userid if already login //not currently using this one
 	@GetMapping("/loginStatus")
 	public String loginStatus(Model model, @RequestParam(value = "token", defaultValue = "") String jwt) {
