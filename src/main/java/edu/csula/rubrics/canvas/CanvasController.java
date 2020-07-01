@@ -60,11 +60,19 @@ public class CanvasController {
 			conn.setRequestMethod("POST");
 			conn.setRequestProperty("Content-Type", "application/json");
 			conn.setDoOutput(true);
-
-			String jsonInputString = "{ \"grant_type\": \"authorization_code\"," + " \"client_id\":" + dkID + ","
-					+ " \"client_secret\": \"" + dkKey + "\","
-					+ " \"redirect_uri\": \"https://alice.cysun.org/alice-rubrics/canvas/oauth_callback\","
-					+ " \"code\": \"" + code + "\"" + " } ";
+			
+			JSONObject jsonObj = new JSONObject();
+			jsonObj.put("grant_type", "authorization_code");
+			jsonObj.put("client_id", dkID);
+			jsonObj.put("client_secret", dkKey);
+			jsonObj.put("redirect_uri", "https://alice.cysun.org/alice-rubrics/canvas/oauth_callback");
+			jsonObj.put("code", code);
+			
+			String jsonInputString = jsonObj.toString();
+//			String jsonInputString = "{ \"grant_type\": \"authorization_code\"," + " \"client_id\":" + dkID + ","
+//					+ " \"client_secret\": \"" + dkKey + "\","
+//					+ " \"redirect_uri\": \"https://alice.cysun.org/alice-rubrics/canvas/oauth_callback\","
+//					+ " \"code\": \"" + code + "\"" + " } ";
 
 			OutputStream os = conn.getOutputStream();
 			os.write(jsonInputString.getBytes());
