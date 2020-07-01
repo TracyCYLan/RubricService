@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -318,9 +319,45 @@ public class CanvasRestController {
 
 		//1. convert Criterion to JSON Object that we planning to export to Canvas
 		Criterion c = criterionDao.getCriterion(id);
+		JSONObject outcome = new JSONObject();
+		outcome.put("title", c.getName());
+		outcome.put("description", c.getDescription());
+		
+		JSONArray ratings = new JSONArray();
+		
+		for(Rating r: c.getRatings())
+		{
+			JSONObject rating = new JSONObject();
+			rating.put("description", r.getDescription());
+			rating.put("points", r.getValue());
+			ratings.add(rating);
+		}
+		
+		outcome.put("ratings", ratings);
 		
 		//2. use url:POST|/api/v1/courses/:course_id/outcome_groups/:id/outcomes to ADD OUTCOME to Canvas
-		
+		try {
+			URL url = new URL("https://calstatela.instructure.com:443/api/v1/courses/"+courseId+"/outcome_groups/"+outcome_group_Id+"/outcomes");
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+			conn.setRequestMethod("POST");
+			conn.setRequestProperty("Authorization", "Bearer " + token);
+			conn.setRequestProperty("Content-Type", "application/json");
+			conn.setDoOutput(true);
+
+			String jsonInputString = outcome.toString();
+
+			OutputStream os = conn.getOutputStream();
+			os.write(jsonInputString.getBytes());
+			os.flush();
+
+
+			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+				throw new RuntimeException("Failed to export Outcome: HTTP error code : " + conn.getResponseCode());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	//return outcome groups under certain course
