@@ -388,4 +388,66 @@ public class CanvasRestController {
 		}
 		return res;
 	}
+	
+	// get rubric Id from RubricService, and the course Id, then convert it to JSON object then push it into Canvas DB
+	// url:POST|/api/v1/courses/:course_id/rubrics
+	@PostMapping("/rubric/{id}/export/course/{courseId}/{token}")
+	@ResponseStatus(HttpStatus.CREATED)
+	public void exportRubric(@PathVariable long courseId, @PathVariable long id, @RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException, ParseException {
+		
+		if(token.length()==0)
+			return;
+
+		//1. convert Rubric to JSON Object that we planning to export to Canvas
+		Rubric r = rubricDao.getRubric(id);
+		JSONObject object = new JSONObject();
+		
+		JSONObject rubric = new JSONObject();
+		rubric.put("title", r.getName());
+		JSONObject criteria = new JSONObject(); // is a HASHMAP, not ARRAY!
+		int criteria_index = 0;
+		for(Criterion c: r.getCriteria())
+		{
+			JSONObject criterion = new JSONObject();
+			criterion.put("description", c.getName());
+			criterion.put("long_description", c.getDescription());
+			int rating_index = 0;
+			JSONObject ratings = new JSONObject(); // another HASHMAP
+			for(Rating rt: c.getRatings())
+			{
+				JSONObject rating = new JSONObject();
+				rating.put("description", rt.getDescription());
+				rating.put("points", rt.getValue());
+				ratings.put(String.valueOf(rating_index++), rating);
+			}
+			criterion.put("ratings",ratings);
+			criteria.put(String.valueOf(criteria_index++),criterion);
+		}
+		rubric.put("criteria", criteria);
+		object.put("rubric", rubric);
+		
+		//2. use url:POST|/api/v1/courses/:course_id/rubrics to add rubric in Canvas
+		try {
+			URL url = new URL("https://calstatela.instructure.com:443/api/v1/courses/"+courseId+"/rubrics");
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+			conn.setRequestMethod("POST");
+			conn.setRequestProperty("Authorization", "Bearer " + token);
+			conn.setRequestProperty("Content-Type", "application/json");
+			conn.setDoOutput(true);
+
+			String jsonInputString = object.toString();
+
+			OutputStream os = conn.getOutputStream();
+			os.write(jsonInputString.getBytes());
+			os.flush();
+
+
+			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+				throw new RuntimeException("Failed to export rubric: HTTP error code : " + conn.getResponseCode());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }
