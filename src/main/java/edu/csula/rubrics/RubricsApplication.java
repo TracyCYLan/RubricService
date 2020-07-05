@@ -49,7 +49,7 @@ public class RubricsApplication {
 					.antMatchers(HttpMethod.POST,"/**").permitAll()
 					.antMatchers(HttpMethod.PUT,"/**").permitAll()
 					.antMatchers(HttpMethod.PATCH,"/rubric/**").permitAll()
-					
+					.antMatchers(HttpMethod.DELETE,"/**").permitAll()
 //					.antMatchers(HttpMethod.POST, "/user/login").permitAll()
 //					.antMatchers(HttpMethod.POST, "/user/register").permitAll()
 //					.antMatchers(HttpMethod.GET, "/user/**").permitAll()
@@ -64,7 +64,7 @@ public class RubricsApplication {
 			configuration.setAllowCredentials(true);
 			configuration.setAllowedHeaders(Arrays.asList("Access-Control-Allow-Headers","Access-Control-Allow-Origin","Access-Control-Request-Method", "Access-Control-Request-Headers","Origin","Cache-Control", "Content-Type", "Authorization"));
 			configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000","http://alice.cysun.org","http://alice.cysun.org/alice-rubrics","https://alice.cysun.org","https://alice.cysun.org/alice-rubrics"));
-			configuration.setAllowedMethods(Arrays.asList("GET", "POST","PUT","PATCH"));
+			configuration.setAllowedMethods(Arrays.asList("GET", "POST","PUT","PATCH","DELETE"));
 			UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 			source.registerCorsConfiguration("/**", configuration);
 			return source;
