@@ -105,7 +105,7 @@ public class CanvasRestController {
 			return null;
 		
 		List<String> res = new ArrayList<>();
-		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics");
+		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics?per_page=50");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -394,7 +394,6 @@ public class CanvasRestController {
 	@PostMapping("/rubric/{id}/export/course/{courseId}/{token}")
 	@ResponseStatus(HttpStatus.CREATED)
 	public void exportRubric(@PathVariable long courseId, @PathVariable long id, @RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException, ParseException {
-		
 		if(token.length()==0)
 			return;
 
@@ -425,7 +424,6 @@ public class CanvasRestController {
 		}
 		rubric.put("criteria", criteria);
 		object.put("rubric", rubric);
-		
 		//2. use url:POST|/api/v1/courses/:course_id/rubrics to add rubric in Canvas
 		try {
 			URL url = new URL("https://calstatela.instructure.com:443/api/v1/courses/"+courseId+"/rubrics");
