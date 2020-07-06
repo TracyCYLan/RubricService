@@ -87,7 +87,6 @@ public class RubricController {
 	}
 	@DeleteMapping("/{rid}/criterion/{cid}")
 	public void removeCriterionOfRubric(@PathVariable long rid, @PathVariable long cid) {
-		System.out.println("remove rubric "+rid+"with criterion "+cid);
 		Rubric rubric = rubricDao.getRubric(rid);
 		if (rubric == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");

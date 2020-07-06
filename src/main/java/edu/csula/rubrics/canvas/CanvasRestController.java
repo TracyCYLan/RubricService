@@ -409,7 +409,10 @@ public class CanvasRestController {
 		{
 			JSONObject criterion = new JSONObject();
 			criterion.put("description", c.getName());
-			criterion.put("long_description", c.getDescription());
+			//Rubric on Canvas doesn't support html format, so we remove html tags in criterion description 
+			String desc = c.getDescription();
+			desc = desc.replaceAll("\\<.*?\\>", "");
+			criterion.put("long_description", desc);
 			int rating_index = 0;
 			JSONObject ratings = new JSONObject(); // another HASHMAP
 			for(Rating rt: c.getRatings())
