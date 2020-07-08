@@ -98,32 +98,54 @@ public class CanvasRestController {
 
 	// get ALL rubrics under certain course
 	// calling url:GET|/v1/courses/{course_id}/rubrics
-	@RequestMapping(value = "/courses/{cid}/rubrics/{token}", method = RequestMethod.GET, produces = "application/json")
+	@RequestMapping(value = "courses/{cid}/rubrics/{token}", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getRubrics(@PathVariable long cid,@RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException {
 		
 		if(token.length()==0)
 			return null;
-		
+		int pageNum = 1;
+		StringBuilder sb = new StringBuilder();
 		List<String> res = new ArrayList<>();
-		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics?per_page=50");
-		String readLine = null;
-		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
+		while(pageNum>=1 && pageNum<10) //for now I set limitation at most we can have 500 rubrics 
+		{
+			URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics?page="+pageNum+"&per_page=50");
+			String readLine = null;
+			HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
-		connection.setRequestProperty("Authorization", "Bearer " + token);
-		connection.setRequestProperty("Content-Type", "application/json");
-		connection.setRequestMethod("GET");
-		int responseCode = connection.getResponseCode();
-		if (responseCode == HttpURLConnection.HTTP_OK) {
-			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			StringBuffer response = new StringBuffer();
-			while ((readLine = in.readLine()) != null) {
-				response.append(readLine);
+			connection.setRequestProperty("Authorization", "Bearer " + token);
+			connection.setRequestProperty("Content-Type", "application/json");
+			connection.setRequestMethod("GET");
+			int responseCode = connection.getResponseCode();
+			if (responseCode == HttpURLConnection.HTTP_OK) {
+				BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+				StringBuffer response = new StringBuffer();
+				while ((readLine = in.readLine()) != null) {
+					response.append(readLine);
+				}
+				in.close();
+				//empty array -- means no data in this page:
+				if(response.toString().equals("[]"))
+				{
+					sb.deleteCharAt(sb.length()-1); //remove ,
+					sb.append("]");
+					break;
+				}
+				//if it's not the first page, we shall remove front bracket
+				if(pageNum!=1)
+				{
+					response.deleteCharAt(0); //remove [
+				}
+				//no matter which page we are, we shall remove ] and changed to ,
+				response.deleteCharAt(response.length()-1); 
+				response.append(","); 
+				
+				sb.append(response.toString());
+				pageNum++;
+			} else {
+				System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics due to " + responseCode);
 			}
-			in.close();
-			res.add(response.toString());
-		} else {
-			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics due to " + responseCode);
 		}
+		res.add(sb.toString());
 		return res;
 	}
 
