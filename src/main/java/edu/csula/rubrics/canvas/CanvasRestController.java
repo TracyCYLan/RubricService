@@ -448,8 +448,17 @@ public class CanvasRestController {
 			criteria.put(String.valueOf(criteria_index++),criterion);
 		}
 		rubric.put("criteria", criteria);
+		
+		//2. link the rubric with RubricAssociation
+		JSONObject rubric_association = new JSONObject();
+		rubric_association.put("association_id", courseId);
+		rubric_association.put("association_type", "Course");
+		
+		//3. link Rubric obj and RubricAssociation into request object
 		object.put("rubric", rubric);
-		//2. use url:POST|/api/v1/courses/:course_id/rubrics to add rubric in Canvas
+		object.put("rubric_association", rubric_association);
+		
+		//4. use url:POST|/api/v1/courses/:course_id/rubrics to add rubric in Canvas
 		try {
 			URL url = new URL("https://calstatela.instructure.com:443/api/v1/courses/"+courseId+"/rubrics");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -464,7 +473,6 @@ public class CanvasRestController {
 			OutputStream os = conn.getOutputStream();
 			os.write(jsonInputString.getBytes());
 			os.flush();
-
 
 			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
 				throw new RuntimeException("Failed to export rubric: HTTP error code : " + conn.getResponseCode());
