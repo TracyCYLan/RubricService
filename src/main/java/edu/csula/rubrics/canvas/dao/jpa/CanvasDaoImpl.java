@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import edu.csula.rubrics.canvas.dao.CanvasDao;
 import edu.csula.rubrics.models.Criterion;
+import edu.csula.rubrics.models.External;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.Tag;
@@ -23,13 +24,13 @@ public class CanvasDaoImpl implements CanvasDao {
 
 	@Override
 	public long checkRubricExists(String extsource, String extid) {
-		String query = "from Rubric where externalSource = :extsource AND externalId = :extid";
-		List<Rubric> rubrics = entityManager.createQuery(query, Rubric.class)
+		String query = "from External where source = :extsource AND external_id = :extid AND type = rubric";
+		List<External> externals = entityManager.createQuery(query, External.class)
 								.setParameter("extsource", extsource)
 								.setParameter("extid", extid)
 								.getResultList();
-		if (rubrics.size() == 1)
-			return rubrics.get(0).getId();
+		if (externals.size() == 1)
+			return externals.get(0).getRubric().getId(); //return rubric Id 
 		else // not found (or normally impossible to find more than one result)
 			return (long) -1;
 	}

@@ -43,10 +43,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import edu.csula.rubrics.canvas.dao.CanvasDao;
 import edu.csula.rubrics.models.Criterion;
+import edu.csula.rubrics.models.External;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.Tag;
 import edu.csula.rubrics.models.dao.CriterionDao;
+import edu.csula.rubrics.models.dao.ExternalDao;
 import edu.csula.rubrics.models.dao.RubricDao;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -63,6 +65,9 @@ public class CanvasRestController {
 	@Autowired
 	CanvasDao canvasDao;
 
+	@Autowired
+	ExternalDao externalDao;
+	
 	final String EXTSOURCE = "Canvas";
 
 	// get ALL courses via given canvasToken
@@ -185,17 +190,24 @@ public class CanvasRestController {
 			String rubric_name = rubricJson.get("title").toString();
 			// first check if this rubric is imported before ...
 			String rubric_extid = rubricJson.get("id").toString();
-			long duplId = canvasDao.checkRubricExists(EXTSOURCE, rubric_extid); // the id which has this imported rubric
+			long duplId = canvasDao.checkRubricExists(EXTSOURCE,rubric_extid); // the id which has this imported rubric
 			if (duplId > -1) // -1 means never import
 				return duplId;
 			else {
 				rubric.setName(rubric_name);
-				rubric.setExternalSource(EXTSOURCE);
-				rubric.setExternalId(rubric_extid);
 				// here is to get current user id
 				// then we can uncomment below
 //				rubric.setCreator(ID); //I think creator type should be also extUserId and extSource? 
 				rubric = rubricDao.saveRubric(rubric);
+				
+				/*
+				 * here is the place we deal with External
+				 */
+				External external = new External(EXTSOURCE,rubric_extid,"rubric");
+				external.setRubric(rubric);
+				external = externalDao.saveExternal(external);
+				rubric.getExternals().add(external);
+				
 				List<Criterion> criteria = rubric.getCriteria();
 				// create criteria under rubric
 				JSONArray criteriaArray = (JSONArray) rubricJson.get("data");
@@ -581,49 +593,7 @@ public class CanvasRestController {
 			}
 			in.close();
 
-			// create rubric
-			JSONParser parser = new JSONParser();
-			JSONObject rubricJson = (JSONObject) parser.parse(response.toString());
-			String rubric_name = rubricJson.get("title").toString();
-
-			rubric.setName(rubric_name);
-			rubric.setExternalSource(EXTSOURCE);
-			// here is to get current user id
-			// then we can uncomment below
-//				rubric.setCreator(ID); //I think creator type should be also extUserId and extSource? 
-			rubric = rubricDao.saveRubric(rubric);
-			List<Criterion> criteria = rubric.getCriteria();
-			// create criteria under rubric
-			JSONArray criteriaArray = (JSONArray) rubricJson.get("data");
-			for (int i = 0; i < criteriaArray.size(); i++) {
-				JSONObject criterionJson = (JSONObject) parser.parse(criteriaArray.get(i).toString());
-				String criterion_name = criterionJson.get("description").toString();
-				String criterion_desc = criterionJson.get("long_description").toString();
-				Criterion criterion = new Criterion();
-				// criterion inside rubric is ok to be duplicated, so no need to set extsource
-				// and extid here
-				criterion.setName(criterion_name);
-				criterion.setDescription(criterion_desc);
-				criterion.setReusable(false);
-				criterion = criterionDao.saveCriterion(criterion);
-				criteria.add(criterion);
-
-				// create ratings under criterion
-				JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
-				for (int j = 0; j < ratingsArray.size(); j++) {
-					JSONObject ratingJson = (JSONObject) parser.parse(ratingsArray.get(j).toString());
-					String rating_desc = ratingJson.get("description").toString();
-					double rating_value = Double.parseDouble(ratingJson.get("points").toString());
-					Rating rating = new Rating();
-					rating.setCriterion(criterion);
-					rating.setDescription(rating_desc);
-					rating.setValue(rating_value);
-
-					rating = criterionDao.saveRating(rating);
-				}
-
-			}
-
+			//undone....
 		} else {
 			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id} due to " + responseCode);
 		}

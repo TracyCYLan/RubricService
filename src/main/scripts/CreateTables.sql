@@ -1,4 +1,4 @@
-	create table artifacts (
+    create table artifacts (
        id bigint not null,
         endpoint varchar(255) not null,
         name varchar(255) not null,
@@ -36,13 +36,13 @@
 
     create table criteria (
        id bigint not null,
-		name varchar(255) not null,
+        deleted bit not null,
         description varchar(255) not null,
-        external_source varchar(255),
         external_id varchar(255),
+        external_source varchar(255),
+        name varchar(255) not null,
         publish_date datetime(6),
         reusable bit not null,
-        deleted bit not null,
         FULLTEXT(name,description),
         primary key (id)
     ) engine=InnoDB;
@@ -52,9 +52,21 @@
         tag_id bigint not null
     ) engine=InnoDB;
 
+    create table externals (
+       id bigint not null,
+        external_id varchar(255),
+        source varchar(255),
+        type varchar(255),
+        criterion_id bigint,
+        rubric_id bigint,
+        primary key (id)
+    ) engine=InnoDB;
+
     create table hibernate_sequence (
        next_val bigint
     ) engine=InnoDB;
+
+    insert into hibernate_sequence values ( 1 );
 
     insert into hibernate_sequence values ( 1 );
 
@@ -92,15 +104,13 @@
 
     create table rubrics (
        id bigint not null,
-        name varchar(255) not null,
+        deleted bit not null,
         description varchar(255),
-        external_source varchar(255),
-        external_id varchar(255),
         public bit not null,
         last_updated_date timestamp not null default current_timestamp,
-        publish_date datetime(6),
-        deleted bit not null,
+        name varchar(255) not null,
         obsolete bit not null,
+        publish_date datetime(6),
         creator_id bigint,
         FULLTEXT(name,description),
         primary key (id)
@@ -110,7 +120,7 @@
        id bigint not null,
         count integer not null,
         value varchar(255) not null,
-		FULLTEXT(value),
+        FULLTEXT(value),
         primary key (id)
     ) engine=InnoDB;
 
@@ -134,9 +144,6 @@
         username varchar(255) not null,
         primary key (id)
     ) engine=InnoDB;
-
-    alter table users 
-       add constraint UK_ka6m8ghsr7vna1ti6lftwww8o unique (cin);
 
     alter table users 
        add constraint UK_r43af9ap4edm43mmtq01oddj6 unique (username);
@@ -190,6 +197,16 @@
        add constraint FK60113r10ymtj1i21yop0mijdl 
        foreign key (criterion_id) 
        references criteria (id);
+
+    alter table externals 
+       add constraint FKasn03sjgsaoowf1bnsnnmf3at 
+       foreign key (criterion_id) 
+       references criteria (id);
+
+    alter table externals 
+       add constraint FKo4ga8ut47q5od73ujyfpeaiyp 
+       foreign key (rubric_id) 
+       references rubrics (id);
 
     alter table ratings 
        add constraint FKqkq5f3y63dkujpg7imq036s2n 

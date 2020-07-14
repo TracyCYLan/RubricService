@@ -8,7 +8,9 @@ import java.util.Date;
 import java.util.List;
 
 import javax.persistence.CascadeType;
+import javax.persistence.CollectionTable;
 import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -16,8 +18,11 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.OrderColumn;
 import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "rubrics")
@@ -33,14 +38,13 @@ public class Rubric implements Serializable {
     private String name;
 
     private String description;
-
-    //e.g., Canvas
-    @Column(name = "external_source")
-    private String externalSource; 
     
-    //rubric id in the externalSource
-    @Column(name = "external_id")
-    private String externalId;
+    //One Rubric has multiple external Ids and its corresponding source
+    //For each externalSourceId, we store external source name AND object ID in the external source
+    //e.g., Canvas1001
+    @JsonIgnore
+    @OneToMany(mappedBy = "rubric")
+    private List<External> externals;
     
     /* 
      * Each rubric has a number of criteria. 
@@ -79,6 +83,7 @@ public class Rubric implements Serializable {
         isPublic = false;
         deleted = false;
         criteria = new ArrayList<Criterion>();
+        externals = new ArrayList<External>();
     }
 
     public Rubric clone()
@@ -128,22 +133,6 @@ public class Rubric implements Serializable {
     {
         this.description = description;
     }
-
-	public String getExternalSource() {
-		return externalSource;
-	}
-
-	public void setExternalSource(String externalSource) {
-		this.externalSource = externalSource;
-	}
-
-	public String getExternalId() {
-		return externalId;
-	}
-
-	public void setExternalId(String externalId) {
-		this.externalId = externalId;
-	}
 
 	public List<Criterion> getCriteria() {
 		return criteria;
@@ -211,4 +200,12 @@ public class Rubric implements Serializable {
         this.deleted = deleted;
     }
 
+	public List<External> getExternals() {
+		return externals;
+	}
+
+	public void setExternals(List<External> externals) {
+		this.externals = externals;
+	}
+    
 }
