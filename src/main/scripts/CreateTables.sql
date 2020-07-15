@@ -34,19 +34,17 @@
         primary key (id)
     ) engine=InnoDB;
 
-    create table criteria (
-       id bigint not null,
-        deleted bit not null,
-        description varchar(255) not null,
-        external_id varchar(255),
-        external_source varchar(255),
-        name varchar(255) not null,
-        publish_date datetime(6),
-        reusable bit not null,
-        FULLTEXT(name,description),
-        primary key (id)
-    ) engine=InnoDB;
-
+    CREATE TABLE criteria (
+    id BIGINT NOT NULL,
+    deleted BIT NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    publish_date DATETIME(6),
+    reusable BIT NOT NULL,
+    FULLTEXT ( name , description ),
+    PRIMARY KEY (id)
+)  ENGINE=INNODB;
+    
     create table criterion_tags (
        criterion_id bigint not null,
         tag_id bigint not null

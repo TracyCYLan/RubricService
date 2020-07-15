@@ -19,13 +19,12 @@ public class External {
     @GeneratedValue
     private Long id;
     
-    @Column(name = "source")
     private String source;
     
     @Column(name = "external_id")
     private String externalId;
     
-    //value = {rubric, criterion}
+    //value = {'rubric', 'criterion'}
     private String type;
     
     @ManyToOne
@@ -41,7 +40,7 @@ public class External {
     public External(String source,String externalId, String type) {
     	this.source = source;
     	this.externalId = externalId;
-    	this.type = this.type;
+    	this.type = type;
     }
 	public Long getId() {
 		return id;

@@ -12,7 +12,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -41,12 +40,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import edu.csula.rubrics.canvas.dao.CanvasDao;
 import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.External;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Rubric;
-import edu.csula.rubrics.models.Tag;
 import edu.csula.rubrics.models.dao.CriterionDao;
 import edu.csula.rubrics.models.dao.ExternalDao;
 import edu.csula.rubrics.models.dao.RubricDao;
@@ -63,11 +60,8 @@ public class CanvasRestController {
 	CriterionDao criterionDao;
 
 	@Autowired
-	CanvasDao canvasDao;
-
-	@Autowired
 	ExternalDao externalDao;
-	
+
 	final String EXTSOURCE = "Canvas";
 
 	// get ALL courses via given canvasToken
@@ -168,6 +162,7 @@ public class CanvasRestController {
 
 		URL urlForGetRequest = new URL(
 				"https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics/" + rid);
+
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -175,74 +170,84 @@ public class CanvasRestController {
 		connection.setRequestProperty("Content-Type", "application/json");
 		connection.setRequestMethod("GET");
 		int responseCode = connection.getResponseCode();
-		Rubric rubric = new Rubric();
-		if (responseCode == HttpURLConnection.HTTP_OK) {
-			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			StringBuffer response = new StringBuffer();
-			while ((readLine = in.readLine()) != null) {
-				response.append(readLine);
-			}
-			in.close();
-
-			// create rubric
-			JSONParser parser = new JSONParser();
-			JSONObject rubricJson = (JSONObject) parser.parse(response.toString());
-			String rubric_name = rubricJson.get("title").toString();
-			// first check if this rubric is imported before ...
-			String rubric_extid = rubricJson.get("id").toString();
-			long duplId = canvasDao.checkRubricExists(EXTSOURCE,rubric_extid); // the id which has this imported rubric
-			if (duplId > -1) // -1 means never import
-				return duplId;
-			else {
-				rubric.setName(rubric_name);
-				// here is to get current user id
-				// then we can uncomment below
-//				rubric.setCreator(ID); //I think creator type should be also extUserId and extSource? 
-				rubric = rubricDao.saveRubric(rubric);
-				
-				/*
-				 * here is the place we deal with External
-				 */
-				External external = new External(EXTSOURCE,rubric_extid,"rubric");
-				external.setRubric(rubric);
-				external = externalDao.saveExternal(external);
-				rubric.getExternals().add(external);
-				
-				List<Criterion> criteria = rubric.getCriteria();
-				// create criteria under rubric
-				JSONArray criteriaArray = (JSONArray) rubricJson.get("data");
-				for (int i = 0; i < criteriaArray.size(); i++) {
-					JSONObject criterionJson = (JSONObject) parser.parse(criteriaArray.get(i).toString());
-					String criterion_name = criterionJson.get("description").toString();
-					String criterion_desc = criterionJson.get("long_description").toString();
-					Criterion criterion = new Criterion();
-					// criterion inside rubric is ok to be duplicated, so no need to set extsource
-					// and extid here
-					criterion.setName(criterion_name);
-					criterion.setDescription(criterion_desc);
-					criterion.setReusable(false);
-					criterion = criterionDao.saveCriterion(criterion);
-					criteria.add(criterion);
-
-					// create ratings under criterion
-					JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
-					for (int j = 0; j < ratingsArray.size(); j++) {
-						JSONObject ratingJson = (JSONObject) parser.parse(ratingsArray.get(j).toString());
-						String rating_desc = ratingJson.get("description").toString();
-						double rating_value = Double.parseDouble(ratingJson.get("points").toString());
-						Rating rating = new Rating();
-						rating.setCriterion(criterion);
-						rating.setDescription(rating_desc);
-						rating.setValue(rating_value);
-
-						rating = criterionDao.saveRating(rating);
-					}
-				}
-			}
-
-		} else {
+		
+		if (responseCode != HttpURLConnection.HTTP_OK) 
+		{
 			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id} due to " + responseCode);
 			return (long) -1;
+		}
+		
+		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		StringBuffer response = new StringBuffer();
+		while ((readLine = in.readLine()) != null) {
+			response.append(readLine);
+		}
+		in.close();
+
+		return importRubricHelper(response.toString());
+
+	}
+	
+	private long importRubricHelper(String response) throws ParseException {
+		
+		//1. create rubric
+		Rubric rubric = new Rubric();
+		JSONParser parser = new JSONParser();
+		JSONObject rubricJson = (JSONObject) parser.parse(response);
+		// before create, first check if this rubric is imported before ...
+		String rubric_extid = rubricJson.get("id").toString();
+		long duplId = externalDao.checkExists(EXTSOURCE, rubric_extid, "rubric"); // the rubric that imported this rubric before
+		if (duplId > -1) // -1 means never import
+			return duplId;
+		
+		String rubric_name = rubricJson.get("title").toString();
+		rubric.setName(rubric_name);
+		// here is to get current user id
+		// then we can uncomment below
+//						rubric.setCreator(ID); //I think creator type should be also extUserId and extSource? 
+		rubric = rubricDao.saveRubric(rubric);
+
+		//2. bind rubric with ID in external source (Canvas in this case)
+		External externalr = new External(EXTSOURCE, rubric_extid, "rubric");
+		externalr.setRubric(rubric);
+		externalr = externalDao.saveExternal(externalr);
+		rubric.getExternals().add(externalr);
+
+		//3. create criteria under rubric
+		List<Criterion> criteria = rubric.getCriteria();
+		JSONArray criteriaArray = (JSONArray) rubricJson.get("data");
+		for (int i = 0; i < criteriaArray.size(); i++) {
+			JSONObject criterionJson = (JSONObject) parser.parse(criteriaArray.get(i).toString());
+			String criterion_name = criterionJson.get("description").toString();
+			String criterion_desc = criterionJson.get("long_description").toString();
+			String criterion_extid = criterionJson.get("id").toString();
+			Criterion criterion = new Criterion();
+
+			criterion.setName(criterion_name);
+			criterion.setDescription(criterion_desc);
+			criterion.setReusable(false);
+			criterion = criterionDao.saveCriterion(criterion);
+			criteria.add(criterion);
+
+			//4. bind outcome with ID in external source (Canvas in this case)
+			External externalc = new External(EXTSOURCE, criterion_extid, "criterion");
+			externalc.setCriterion(criterion);
+			externalc = externalDao.saveExternal(externalc);
+			criterion.getExternals().add(externalc);
+
+			//5. create ratings under criterion
+			JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
+			for (int j = 0; j < ratingsArray.size(); j++) {
+				JSONObject ratingJson = (JSONObject) parser.parse(ratingsArray.get(j).toString());
+				String rating_desc = ratingJson.get("description").toString();
+				double rating_value = Double.parseDouble(ratingJson.get("points").toString());
+				Rating rating = new Rating();
+				rating.setCriterion(criterion);
+				rating.setDescription(rating_desc);
+				rating.setValue(rating_value);
+
+				rating = criterionDao.saveRating(rating);
+			}
 		}
 
 		return rubric.getId();
@@ -315,17 +320,21 @@ public class CanvasRestController {
 			String criterion_desc = criterionJson.get("description").toString();
 			// first check if we import this criterion before:
 			String criterion_extid = criterionJson.get("id").toString();
-			long duplId = canvasDao.checkCriterionExists(EXTSOURCE, criterion_extid); // the id which has this imported
-																						// c
+			long duplId = externalDao.checkExists(EXTSOURCE, criterion_extid, "criterion"); // id of existed outcome in
+																							// RS
 			if (duplId > -1)
 				return duplId;
 			else {
 				criterion.setName(criterion_name);
 				criterion.setDescription(criterion_desc);
-				criterion.setExternalId(criterion_extid);
-				criterion.setExternalSource(EXTSOURCE);
 				criterion.setReusable(true); // since the outcome we can import from Canvas is definitely reusable
 				criterion = criterionDao.saveCriterion(criterion);
+
+				External external = new External(EXTSOURCE, criterion_extid, "criterion");
+				external.setCriterion(criterion);
+				external = externalDao.saveExternal(external);
+				criterion.getExternals().add(external);
+
 				// create ratings under criterion
 				JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
 				for (int j = 0; j < ratingsArray.size(); j++) {
@@ -397,6 +406,27 @@ public class CanvasRestController {
 
 			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
 				throw new RuntimeException("Failed to export Outcome: HTTP error code : " + conn.getResponseCode());
+			}
+
+			// 3. get Response Body and record the external outcome ID into DB
+			try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
+				StringBuilder response = new StringBuilder();
+				String responseLine = null;
+				while ((responseLine = br.readLine()) != null) {
+					response.append(responseLine.trim());
+				}
+				// convert response body to JSONObject
+				JSONParser parser = new JSONParser();
+				JSONObject responseJson = (JSONObject) parser.parse(response.toString());
+				JSONObject outcomeJson = (JSONObject) responseJson.get("outcome");
+				String criterion_extid = outcomeJson.get("id").toString();
+
+				// bind export outcome's ID with criterionid
+				External external = new External(EXTSOURCE, criterion_extid, "criterion");
+				external.setCriterion(c);
+				external = externalDao.saveExternal(external);
+				c.getExternals().add(external);
+				c = criterionDao.saveCriterion(c);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -504,6 +534,41 @@ public class CanvasRestController {
 			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
 				throw new RuntimeException("Failed to export rubric: HTTP error code : " + conn.getResponseCode());
 			}
+
+			// 5. get Response Body and record the external rubric ID and criteria IDs into
+			// DB
+			try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
+				StringBuilder response = new StringBuilder();
+				String responseLine = null;
+				while ((responseLine = br.readLine()) != null) {
+					response.append(responseLine.trim());
+				}
+				// convert response body to JSONObject
+				JSONParser parser = new JSONParser();
+				JSONObject responseJson = (JSONObject) parser.parse(response.toString());
+				JSONObject rubricJson = (JSONObject) responseJson.get("rubric");
+				String rubric_extid = rubricJson.get("id").toString();
+
+				// bind export rubric's ID with rubric on Rubric Service (also criteria under
+				// rubric)
+				External external = new External(EXTSOURCE, rubric_extid, "rubric");
+				external.setRubric(r);
+				external = externalDao.saveExternal(external);
+				r.getExternals().add(external);
+				r = rubricDao.saveRubric(r);
+				List<Criterion> rscriteria = r.getCriteria(); // criteria array under Rubric on RS
+				JSONArray criteriaArray = (JSONArray) rubricJson.get("data");
+				for (int i = 0; i < criteriaArray.size(); i++) {
+					JSONObject criterionJson = (JSONObject) parser.parse(criteriaArray.get(i).toString());
+					String cid = criterionJson.get("id").toString();
+					Criterion rscriterion = rscriteria.get(i); // the criterion under Rubric on Rubric Service
+					External externalc = new External(EXTSOURCE, cid, "criterion");
+					externalc.setCriterion(rscriterion);
+					externalc = externalDao.saveExternal(externalc);
+					rscriterion.getExternals().add(externalc);
+					rscriterion = criterionDao.saveCriterion(rscriterion);
+				}
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -569,35 +634,40 @@ public class CanvasRestController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public void importAssessments(@PathVariable long cid, @PathVariable long rid,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token)
-			throws IOException, ParseException 
-	{
-
+			throws IOException, ParseException {
 		if (token.length() == 0)
 			return;
 
-		URL urlForGetRequest = new URL(
-				"https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics/" + rid+"?include[]=assessments&style=full");
+		// 1. call API to get rubric with assessments
+		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics/"
+				+ rid + "?include[]=assessments&style=full");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-
 		connection.setRequestProperty("Authorization", "Bearer " + token);
 		connection.setRequestProperty("Content-Type", "application/json");
 		connection.setRequestMethod("GET");
 		int responseCode = connection.getResponseCode();
-		Rubric rubric = new Rubric();
-		if (responseCode == HttpURLConnection.HTTP_OK) {
-			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			StringBuffer response = new StringBuffer();
-			while ((readLine = in.readLine()) != null) {
-				response.append(readLine);
-			}
-			in.close();
 
-			//undone....
-		} else {
+		if (responseCode != HttpURLConnection.HTTP_OK) 
+		{
 			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id} due to " + responseCode);
+			return;
 		}
-
+		
+		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		StringBuffer response = new StringBuffer();
+		while ((readLine = in.readLine()) != null) {
+			response.append(readLine);
+		}
+		in.close();
+		//2. import Rubric and Criterion, Ratings under it if needed
+		importRubricHelper(response.toString());
+		
+		//3. create Assessments and put them in an arraylist 
+		
+		
+		//3. create AssessmentGroup and put the arraylist into it
+		
 	}
 
 }
