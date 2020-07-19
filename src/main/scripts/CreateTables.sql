@@ -7,6 +7,14 @@
         primary key (id)
     ) engine=InnoDB;
 
+    create table assessment_group (
+       id bigint not null,
+        description varchar(255),
+        name varchar(255),
+        publish_date datetime(6),
+        primary key (id)
+    ) engine=InnoDB;
+
     create table assessment_ratings (
        assessment_id bigint not null,
         rating_id bigint not null
@@ -19,8 +27,10 @@
         date datetime(6),
         deleted bit not null,
         artifact_id bigint,
+        assessment_group_id bigint,
         assesor_id bigint,
         association_id bigint,
+        rubric_id bigint,
         task_id bigint,
         primary key (id)
     ) engine=InnoDB;
@@ -34,17 +44,17 @@
         primary key (id)
     ) engine=InnoDB;
 
-    CREATE TABLE criteria (
-    id BIGINT NOT NULL,
-    deleted BIT NOT NULL,
-    description VARCHAR(255) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    publish_date DATETIME(6),
-    reusable BIT NOT NULL,
-    FULLTEXT ( name , description ),
-    PRIMARY KEY (id)
-)  ENGINE=INNODB;
-    
+    create table criteria (
+       id bigint not null,
+        deleted bit not null,
+        description varchar(255) not null,
+        name varchar(255) not null,
+        publish_date datetime(6),
+        reusable bit not null,
+        FULLTEXT ( name , description ),
+        primary key (id)
+    ) engine=InnoDB;
+
     create table criterion_tags (
        criterion_id bigint not null,
         tag_id bigint not null
@@ -63,6 +73,8 @@
     create table hibernate_sequence (
        next_val bigint
     ) engine=InnoDB;
+
+    insert into hibernate_sequence values ( 1 );
 
     insert into hibernate_sequence values ( 1 );
 
@@ -105,12 +117,12 @@
         deleted bit not null,
         description varchar(255),
         public bit not null,
-        last_updated_date timestamp not null default current_timestamp,
+        last_updated_date datetime(6),
         name varchar(255) not null,
         obsolete bit not null,
         publish_date datetime(6),
         creator_id bigint,
-        FULLTEXT(name,description),
+         FULLTEXT(name,description),
         primary key (id)
     ) engine=InnoDB;
 
@@ -118,7 +130,7 @@
        id bigint not null,
         count integer not null,
         value varchar(255) not null,
-        FULLTEXT(value),
+		FULLTEXT(value),
         primary key (id)
     ) engine=InnoDB;
 
@@ -167,6 +179,11 @@
        references artifacts (id);
 
     alter table assessments 
+       add constraint FKelomj2cgh9k87n3erq8j2vpeg 
+       foreign key (assessment_group_id) 
+       references assessment_group (id);
+
+    alter table assessments 
        add constraint FKs7rtlo6e56y6kl5hervu5fehm 
        foreign key (assesor_id) 
        references users (id);
@@ -175,6 +192,11 @@
        add constraint FK6bahvwpgsolvirjm45o5imwu0 
        foreign key (association_id) 
        references associations (id);
+
+    alter table assessments 
+       add constraint FK7va5fxsqvo6tth0jwvpynrpah 
+       foreign key (rubric_id) 
+       references rubrics (id);
 
     alter table assessments 
        add constraint FKqwksq4urufoxd7unq3j5t8a4r 

@@ -1,6 +1,7 @@
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS artifacts;
 DROP TABLE IF EXISTS assessment_ratings;
+DROP TABLE IF EXISTS assessment_group;
 DROP TABLE IF EXISTS assessments;
 DROP TABLE IF EXISTS associations;
 DROP TABLE IF EXISTS criteria;

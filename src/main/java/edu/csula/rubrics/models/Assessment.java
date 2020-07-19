@@ -47,6 +47,18 @@ public class Assessment implements Serializable {
     @JoinColumn(name = "task_id")
     private Task task;
     
+    //which rubric we are using to assess this assessment. I think we also need to set something so that no one can change the vlaue of this rubric
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "rubric_id")
+    private Rubric rubric;
+    
+    //one assessment belongs to one group
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "assessment_group_id")
+    private AssessmentGroup assessmentGroup;
+    
     @ManyToMany
     @JoinTable(name = "assessment_ratings",
     joinColumns = @JoinColumn(name = "assessment_id"),
@@ -177,4 +189,21 @@ public class Assessment implements Serializable {
 		this.deleted = deleted;
 	}
 
+	public Rubric getRubric() {
+		return rubric;
+	}
+
+	public void setRubric(Rubric rubric) {
+		this.rubric = rubric;
+	}
+
+	public AssessmentGroup getAssessmentGroup() {
+		return assessmentGroup;
+	}
+
+	public void setAssessmentGroup(AssessmentGroup assessmentGroup) {
+		this.assessmentGroup = assessmentGroup;
+	}
+
+	
 }
