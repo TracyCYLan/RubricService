@@ -684,7 +684,7 @@ public class CanvasRestController {
 				try {
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 					String dateInString = (String) assessmentGroupInfo.get(key);
-					if (dateInString == null) {
+					if (dateInString == null || dateInString.length()==0 ) {
 						assessmentGroup.setPublishDate(null);
 					} else {
 						Date date = sdf.parse(dateInString);

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import edu.csula.rubrics.models.Assessment;
+import edu.csula.rubrics.models.AssessmentGroup;
 import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.User;
 import edu.csula.rubrics.models.dao.AssessmentDao;
@@ -35,8 +36,6 @@ public class AssessmentController {
 	@Autowired
 	UserDao userDao;
 	
-	@Autowired
-	RubricDao rubricDao;
 	
 	// get certain evaluation
 	@GetMapping("/{id}")
@@ -46,7 +45,19 @@ public class AssessmentController {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Assessment not found");
 		return assessment;
 	}
-
+	//get assessmentGroup
+	@GetMapping("/assessmentgroup")
+	public List<AssessmentGroup> getAssessmentGroups(ModelMap models) {
+		return assessmentDao.getAssessmentGroups();
+	}
+	
+	@GetMapping("/assessmentgroup/{id}")
+	public AssessmentGroup getAssessmentGroup(@PathVariable Long id) {
+		AssessmentGroup ag = assessmentDao.getAssessmentGroup(id);
+		if (ag == null)
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "AssessmentGroup not found");
+		return ag;
+	}
 //	// create an evaluation. Do we need to think about how to deal with Task status?
 //	/*
 //	 * { "comments": "Average", 

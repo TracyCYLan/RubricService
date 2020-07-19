@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import edu.csula.rubrics.models.Assessment;
 import edu.csula.rubrics.models.AssessmentGroup;
+import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.dao.AssessmentDao;
 
 
@@ -42,5 +43,11 @@ public class AssessmentDaoImpl implements AssessmentDao {
 	@Transactional
 	public AssessmentGroup saveAssessmentGroup(AssessmentGroup assessmentGroup) {
 		return entityManager.merge( assessmentGroup );
+	}
+	
+	@Override
+	public List<AssessmentGroup> getAssessmentGroups() {
+		// order by lastUpdatedDate desc, publishDate desc
+		return entityManager.createQuery("from AssessmentGroup", AssessmentGroup.class).getResultList();
 	}
 }

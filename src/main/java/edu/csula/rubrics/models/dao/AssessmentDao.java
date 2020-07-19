@@ -15,4 +15,6 @@ public interface AssessmentDao {
 
 	AssessmentGroup saveAssessmentGroup(AssessmentGroup assessmentGrou1p);
 
+	List<AssessmentGroup> getAssessmentGroups();
+
 }
