@@ -8,6 +8,8 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
@@ -28,11 +30,15 @@ public class AssessmentGroup {
 	
 	private String description;
 	
-    @Column(name = "publish_date")
-    private Calendar publishDate;
+    @Column(name = "assess_date")
+    private Calendar assessDate;
     
     @OneToMany(mappedBy = "assessmentGroup")
     private List<Assessment> assessments;
+    
+    @ManyToOne
+    @JoinColumn(name = "rubric_id")
+    private Rubric rubric;
 
     public AssessmentGroup() {
     	assessments = new ArrayList<Assessment>();
@@ -62,12 +68,20 @@ public class AssessmentGroup {
 		this.description = description;
 	}
 
-	public Calendar getPublishDate() {
-		return publishDate;
+	public Calendar getAssessDate() {
+		return assessDate;
 	}
 
-	public void setPublishDate(Calendar publishDate) {
-		this.publishDate = publishDate;
+	public void setAssessDate(Calendar assessDate) {
+		this.assessDate = assessDate;
+	}
+
+	public Rubric getRubric() {
+		return rubric;
+	}
+
+	public void setRubric(Rubric rubric) {
+		this.rubric = rubric;
 	}
 
 	public List<Assessment> getAssessments() {

@@ -71,6 +71,17 @@ public class CanvasRestController {
 
 	final String EXTSOURCE = "Canvas";
 
+	private String getCanvasURL() {
+		String url = "";
+		try (InputStream input = new FileInputStream("src/main/resources/application.properties")) {
+			Properties prop = new Properties();
+			prop.load(input);
+			url = prop.getProperty("canvas.url");
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+		return url;
+	}
 	// get ALL courses via given canvasToken
 	// calling url:GET|/api/v1/courses
 	@RequestMapping(value = "/courses/{token}", method = RequestMethod.GET, produces = "application/json")
@@ -81,7 +92,8 @@ public class CanvasRestController {
 			return null;
 
 		List<String> res = new ArrayList<>();
-		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses");
+		String canvasURL = getCanvasURL();
+		URL urlForGetRequest = new URL(canvasURL+"courses");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -114,9 +126,10 @@ public class CanvasRestController {
 		int pageNum = 1;
 		StringBuilder sb = new StringBuilder();
 		List<String> res = new ArrayList<>();
+		String canvasURL = getCanvasURL();
 		while (pageNum >= 1 && pageNum < 10) // for now I set limitation at most we can have 500 rubrics
 		{
-			URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid
+			URL urlForGetRequest = new URL(canvasURL+"courses/" + cid
 					+ "/rubrics?page=" + pageNum + "&per_page=50");
 			String readLine = null;
 			HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
@@ -166,9 +179,9 @@ public class CanvasRestController {
 
 		if (token.length() == 0)
 			return (long) -1;
-
+		String canvasURL = getCanvasURL();
 		URL urlForGetRequest = new URL(
-				"https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics/" + rid);
+				canvasURL+"courses/" + cid + "/rubrics/" + rid);
 
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
@@ -207,8 +220,10 @@ public class CanvasRestController {
 		if (duplId > -1) // -1 means never import
 			return duplId;
 
+		//automatically publish the rubric while import it. 
 		String rubric_name = rubricJson.get("title").toString();
 		rubric.setName(rubric_name);
+		rubric.setPublishDate(Calendar.getInstance());
 		// here is to get current user id
 		// then we can uncomment below
 //						rubric.setCreator(ID); //I think creator type should be also extUserId and extSource? 
@@ -268,8 +283,9 @@ public class CanvasRestController {
 		if (token.length() == 0)
 			return null;
 		List<String> res = new ArrayList<>();
+		String canvasURL = getCanvasURL();
 		URL urlForGetRequest = new URL(
-				"https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/outcome_group_links");
+				canvasURL+"courses/" + cid + "/outcome_group_links");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -304,7 +320,8 @@ public class CanvasRestController {
 			return (long) -1;
 
 		// get certain canvas outcome
-		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/outcomes/" + id);
+		String canvasURL = getCanvasURL();
+		URL urlForGetRequest = new URL(canvasURL+"outcomes/" + id);
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -395,8 +412,9 @@ public class CanvasRestController {
 
 		// 2. use url:POST|/api/v1/courses/:course_id/outcome_groups/:id/outcomes to ADD
 		// OUTCOME to Canvas
+		String canvasURL = getCanvasURL();
 		try {
-			URL url = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + courseId + "/outcome_groups/"
+			URL url = new URL(canvasURL+"courses/" + courseId + "/outcome_groups/"
 					+ outcome_group_Id + "/outcomes");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
@@ -524,7 +542,8 @@ public class CanvasRestController {
 
 		// 4. use url:POST|/api/v1/courses/:course_id/rubrics to add rubric in Canvas
 		try {
-			URL url = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + courseId + "/rubrics");
+			String canvasURL = getCanvasURL();
+			URL url = new URL(canvasURL+"courses/" + courseId + "/rubrics");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
 			conn.setRequestMethod("POST");
@@ -593,9 +612,10 @@ public class CanvasRestController {
 		int pageNum = 1;
 		StringBuilder sb = new StringBuilder();
 		List<String> res = new ArrayList<>();
+		String canvasURL = getCanvasURL();
 		while (pageNum >= 1 && pageNum < 10) // for now I set limitation at most we can have 500 assignments
 		{
-			URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid
+			URL urlForGetRequest = new URL(canvasURL+"courses/" + cid
 					+ "/assignments?page=" + pageNum + "&per_page=50");
 			String readLine = null;
 			HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
@@ -612,7 +632,7 @@ public class CanvasRestController {
 				}
 				in.close();
 				// empty array -- means no data in this page:
-				if (response.toString().equals("[]")) {
+				if (sb.length()>0 && response.toString().equals("[]")) {
 					sb.deleteCharAt(sb.length() - 1); // remove ,
 					sb.append("]");
 					break;
@@ -646,7 +666,8 @@ public class CanvasRestController {
 			return;
 
 		// 1. call API to get rubric with assessments
-		URL urlForGetRequest = new URL("https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/rubrics/"
+		String canvasURL = getCanvasURL();
+		URL urlForGetRequest = new URL(canvasURL+"courses/" + cid + "/rubrics/"
 				+ rid + "?include[]=assessments&style=full");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
@@ -671,6 +692,7 @@ public class CanvasRestController {
 
 		// 3. create AssessmentGroup
 		AssessmentGroup assessmentGroup = new AssessmentGroup();
+		assessmentGroup.setRubric(rubric);
 		// update assessmentgroup information
 		for (String key : assessmentGroupInfo.keySet()) {
 			switch (key) {
@@ -680,17 +702,17 @@ public class CanvasRestController {
 			case "description":
 				assessmentGroup.setDescription((String) assessmentGroupInfo.get(key));
 				break;
-			case "publishDate":
+			case "assessDate":
 				try {
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 					String dateInString = (String) assessmentGroupInfo.get(key);
 					if (dateInString == null || dateInString.length()==0 ) {
-						assessmentGroup.setPublishDate(null);
+						assessmentGroup.setAssessDate(null);
 					} else {
 						Date date = sdf.parse(dateInString);
 						Calendar calendar = Calendar.getInstance();
 						calendar.setTime(date);
-						assessmentGroup.setPublishDate(calendar);
+						assessmentGroup.setAssessDate(calendar);
 					}
 				} catch (Exception e) {
 					System.out.println(e.getMessage());

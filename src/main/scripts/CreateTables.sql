@@ -9,9 +9,10 @@
 
     create table assessment_group (
        id bigint not null,
+        assess_date datetime(6),
         description varchar(255),
         name varchar(255),
-        publish_date datetime(6),
+        rubric_id bigint,
         primary key (id)
     ) engine=InnoDB;
 
@@ -162,6 +163,11 @@
        add constraint FKi3xd5usajkpbuimva0k8rv7sh 
        foreign key (association_id) 
        references associations (id);
+
+    alter table assessment_group 
+       add constraint FKrc4njigx5qwgrlfe5tfcmui1j 
+       foreign key (rubric_id) 
+       references rubrics (id);
 
     alter table assessment_ratings 
        add constraint FKpf7rbs9siysidpavy0kvci08m 

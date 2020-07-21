@@ -47,7 +47,7 @@ public class Assessment implements Serializable {
     @JoinColumn(name = "task_id")
     private Task task;
     
-    //which rubric we are using to assess this assessment. I think we also need to set something so that no one can change the vlaue of this rubric
+    //which rubric we are using to assess this assessment.
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "rubric_id")
