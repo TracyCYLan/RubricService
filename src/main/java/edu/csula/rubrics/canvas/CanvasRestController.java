@@ -250,7 +250,6 @@ public class CanvasRestController {
 			criterion.setReusable(false);
 			criterion = criterionDao.saveCriterion(criterion);
 			criteria.add(criterion);
-
 			// 4. bind outcome with ID in external source (Canvas in this case)
 			External externalc = new External(EXTSOURCE, criterion_extid, "criterion");
 			externalc.setCriterion(criterion);
@@ -259,6 +258,7 @@ public class CanvasRestController {
 
 			// 5. create ratings under criterion
 			JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
+			List<Rating> ratings = new ArrayList<>();
 			for (int j = 0; j < ratingsArray.size(); j++) {
 				JSONObject ratingJson = (JSONObject) parser.parse(ratingsArray.get(j).toString());
 				String rating_desc = ratingJson.get("description").toString();
@@ -267,9 +267,10 @@ public class CanvasRestController {
 				rating.setCriterion(criterion);
 				rating.setDescription(rating_desc);
 				rating.setValue(rating_value);
-
 				rating = criterionDao.saveRating(rating);
+				ratings.add(rating);
 			}
+			criterion.setRatings(ratings);
 		}
 
 		return rubric.getId();
@@ -689,7 +690,6 @@ public class CanvasRestController {
 		in.close();
 		// 2. import Rubric and Criterion, Ratings under it if needed
 		Rubric rubric = rubricDao.getRubric(importRubricHelper(response.toString()));
-
 		// 3. create AssessmentGroup
 		AssessmentGroup assessmentGroup = new AssessmentGroup();
 		assessmentGroup.setRubric(rubric);
@@ -744,20 +744,17 @@ public class CanvasRestController {
 			Assessment assessment = new Assessment();
 			assessment.setRubric(rubric);
 			assessment.setAssessmentGroup(assessmentGroup);
+			String assessment_type = assessmentJson.get("assessment_type").toString();
+			assessment.setType(assessment_type);
 			// get ratings and add it under this assessment
 			JSONArray ratingsArray = (JSONArray) assessmentJson.get("data");
 			List<Criterion> criteria = rubric.getCriteria();
 			List<Rating> ratings = new ArrayList<>();
 			for (int j = 0; j < ratingsArray.size(); j++) {
 				JSONObject ratingJson = (JSONObject) ratingsArray.get(j);
-				// I'm thinking here I need to get the real rating in rubric's criteria
-				// cuz there's no need to create another ratings here
-				// we just need to let assessment points to some certain ratings
-				// which means n assessments connect to n ratings
 				Criterion criterion = criteria.get(j);
-				for (int k = 0; k < criterion.getRatings().size(); k++) {
+				for (Rating r: criterion.getRatings()) {
 					double points = Double.parseDouble(ratingJson.get("points").toString());
-					Rating r = criterion.getRatings().get(k);
 					if (r.getValue() != points)
 						continue;
 					ratings.add(r);

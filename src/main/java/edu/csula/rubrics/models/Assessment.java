@@ -64,6 +64,9 @@ public class Assessment implements Serializable {
     joinColumns = @JoinColumn(name = "assessment_id"),
     inverseJoinColumns = @JoinColumn(name = "rating_id"))
     private List<Rating> ratings;
+    
+    //assessment_type, e.g., peer_review, grading
+    private String type;
 
     private String comments;
 
@@ -73,7 +76,6 @@ public class Assessment implements Serializable {
 
     private boolean deleted;
     
-
     public Assessment()
     {
         ratings = new ArrayList<Rating>();
@@ -106,7 +108,6 @@ public class Assessment implements Serializable {
             if( rating.getValue()<0 ) return;
 
         completed = true;
-
     }
 
 	public Long getId() {
@@ -205,5 +206,11 @@ public class Assessment implements Serializable {
 		this.assessmentGroup = assessmentGroup;
 	}
 
-	
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
 }

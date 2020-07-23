@@ -29,6 +29,7 @@
         deleted bit not null,
         artifact_id bigint,
         assessment_group_id bigint,
+		type varchar(255),
         assesor_id bigint,
         association_id bigint,
         rubric_id bigint,
