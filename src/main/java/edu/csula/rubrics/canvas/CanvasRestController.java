@@ -5,13 +5,17 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -71,20 +75,21 @@ public class CanvasRestController {
 
 	final String EXTSOURCE = "Canvas";
 
-	private String getCanvasURL() {
+	private String readProp(String name) {
 		String url = "";
 		try (InputStream input = new FileInputStream("src/main/resources/application.properties")) {
 			Properties prop = new Properties();
 			prop.load(input);
-			url = prop.getProperty("canvas.url");
+			url = prop.getProperty(name);
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
 		return url;
 	}
+
 	// get ALL courses via given canvasToken
 	// calling url:GET|/api/v1/courses
-	@RequestMapping(value = "/courses/{token}", method = RequestMethod.GET, produces = "application/json")
+	@RequestMapping(value = "/course/{token}", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getCourses(@RequestParam(value = "token", required = true, defaultValue = "") String token)
 			throws IOException {
 
@@ -92,8 +97,8 @@ public class CanvasRestController {
 			return null;
 
 		List<String> res = new ArrayList<>();
-		String canvasURL = getCanvasURL();
-		URL urlForGetRequest = new URL(canvasURL+"courses");
+		String canvasURL = readProp("canvas.url");
+		URL urlForGetRequest = new URL(canvasURL + "courses");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -117,7 +122,7 @@ public class CanvasRestController {
 
 	// get ALL rubrics under certain course
 	// calling url:GET|/v1/courses/{course_id}/rubrics
-	@RequestMapping(value = "courses/{cid}/rubrics/{token}", method = RequestMethod.GET, produces = "application/json")
+	@RequestMapping(value = "course/{cid}/rubric/{token}", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getRubrics(@PathVariable long cid,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException {
 
@@ -126,11 +131,10 @@ public class CanvasRestController {
 		int pageNum = 1;
 		StringBuilder sb = new StringBuilder();
 		List<String> res = new ArrayList<>();
-		String canvasURL = getCanvasURL();
+		String canvasURL = readProp("canvas.url");
 		while (pageNum >= 1 && pageNum < 10) // for now I set limitation at most we can have 500 rubrics
 		{
-			URL urlForGetRequest = new URL(canvasURL+"courses/" + cid
-					+ "/rubrics?page=" + pageNum + "&per_page=50");
+			URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/rubrics?page=" + pageNum + "&per_page=50");
 			String readLine = null;
 			HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -171,7 +175,7 @@ public class CanvasRestController {
 
 	// Get certain rubric under certain course and import it to our db
 	// calling url:GET|/v1/courses/{course_id}/rubrics/{id}
-	@PostMapping("/courses/{cid}/rubrics/{rid}/{token}")
+	@PostMapping("/course/{cid}/rubric/{rid}/{token}")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long importRubric(@PathVariable long cid, @PathVariable long rid,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token)
@@ -179,9 +183,8 @@ public class CanvasRestController {
 
 		if (token.length() == 0)
 			return (long) -1;
-		String canvasURL = getCanvasURL();
-		URL urlForGetRequest = new URL(
-				canvasURL+"courses/" + cid + "/rubrics/" + rid);
+		String canvasURL = readProp("canvas.url");
+		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/rubrics/" + rid);
 
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
@@ -220,7 +223,7 @@ public class CanvasRestController {
 		if (duplId > -1) // -1 means never import
 			return duplId;
 
-		//automatically publish the rubric while import it. 
+		// automatically publish the rubric while import it.
 		String rubric_name = rubricJson.get("title").toString();
 		rubric.setName(rubric_name);
 		rubric.setPublishDate(Calendar.getInstance());
@@ -278,15 +281,14 @@ public class CanvasRestController {
 
 	// get ALL outcomes under certain course
 	// GET /v1/courses/{course_id}/outcome_group_links
-	@RequestMapping(value = "/courses/{cid}/criteria/{token}", method = RequestMethod.GET, produces = "application/json")
+	@RequestMapping(value = "/course/{cid}/criterion/{token}", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getCriteria(@PathVariable long cid,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException {
 		if (token.length() == 0)
 			return null;
 		List<String> res = new ArrayList<>();
-		String canvasURL = getCanvasURL();
-		URL urlForGetRequest = new URL(
-				canvasURL+"courses/" + cid + "/outcome_group_links");
+		String canvasURL = readProp("canvas.url");
+		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/outcome_group_links");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -321,8 +323,8 @@ public class CanvasRestController {
 			return (long) -1;
 
 		// get certain canvas outcome
-		String canvasURL = getCanvasURL();
-		URL urlForGetRequest = new URL(canvasURL+"outcomes/" + id);
+		String canvasURL = readProp("canvas.url");
+		URL urlForGetRequest = new URL(canvasURL + "outcomes/" + id);
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -385,7 +387,7 @@ public class CanvasRestController {
 	// get criterion Id from RubricService, and the course Id, then convert it to
 	// JSON object then push it into Canvas DB
 	// url:POST|/api/v1/courses/:course_id/outcome_groups/:id/outcomes
-	@PostMapping("/criterion/{id}/export/course/{courseId}/outcome_groups/{outcome_group_Id}/{token}")
+	@PostMapping("/criterion/{id}/export/course/{courseId}/outcome_group/{outcome_group_Id}/{token}")
 	@ResponseStatus(HttpStatus.CREATED)
 	public void exportCriterion(@PathVariable long courseId, @PathVariable long outcome_group_Id, @PathVariable long id,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token)
@@ -413,10 +415,9 @@ public class CanvasRestController {
 
 		// 2. use url:POST|/api/v1/courses/:course_id/outcome_groups/:id/outcomes to ADD
 		// OUTCOME to Canvas
-		String canvasURL = getCanvasURL();
+		String canvasURL = readProp("canvas.url");
 		try {
-			URL url = new URL(canvasURL+"courses/" + courseId + "/outcome_groups/"
-					+ outcome_group_Id + "/outcomes");
+			URL url = new URL(canvasURL + "courses/" + courseId + "/outcome_groups/" + outcome_group_Id + "/outcomes");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
 			conn.setRequestMethod("POST");
@@ -461,7 +462,7 @@ public class CanvasRestController {
 
 	// return outcome groups under certain course
 	// calling url:GET|/api/v1/courses/:course_id/outcome_groups
-	@RequestMapping(value = "/courses/{cid}/outcome_groups/{token}", method = RequestMethod.GET, produces = "application/json")
+	@RequestMapping(value = "/course/{cid}/outcome_group/{token}", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getOutcome_Groups(@PathVariable long cid,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token)
 			throws IOException, ParseException {
@@ -543,8 +544,8 @@ public class CanvasRestController {
 
 		// 4. use url:POST|/api/v1/courses/:course_id/rubrics to add rubric in Canvas
 		try {
-			String canvasURL = getCanvasURL();
-			URL url = new URL(canvasURL+"courses/" + courseId + "/rubrics");
+			String canvasURL = readProp("canvas.url");
+			URL url = new URL(canvasURL + "courses/" + courseId + "/rubrics");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
 			conn.setRequestMethod("POST");
@@ -603,7 +604,7 @@ public class CanvasRestController {
 
 	// get all assignments from certain course
 	// url:GET|/api/v1/courses/:course_id/assignments
-	@RequestMapping(value = "courses/{cid}/assignments/{token}", method = RequestMethod.GET, produces = "application/json")
+	@RequestMapping(value = "course/{cid}/assignment/{token}", method = RequestMethod.GET, produces = "application/json")
 	public List<String> getAssignments(@PathVariable long cid,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException {
 
@@ -613,11 +614,11 @@ public class CanvasRestController {
 		int pageNum = 1;
 		StringBuilder sb = new StringBuilder();
 		List<String> res = new ArrayList<>();
-		String canvasURL = getCanvasURL();
+		String canvasURL = readProp("canvas.url");
 		while (pageNum >= 1 && pageNum < 10) // for now I set limitation at most we can have 500 assignments
 		{
-			URL urlForGetRequest = new URL(canvasURL+"courses/" + cid
-					+ "/assignments?page=" + pageNum + "&per_page=50");
+			URL urlForGetRequest = new URL(
+					canvasURL + "courses/" + cid + "/assignments?page=" + pageNum + "&per_page=50");
 			String readLine = null;
 			HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -633,7 +634,7 @@ public class CanvasRestController {
 				}
 				in.close();
 				// empty array -- means no data in this page:
-				if (sb.length()>0 && response.toString().equals("[]")) {
+				if (sb.length() > 0 && response.toString().equals("[]")) {
 					sb.deleteCharAt(sb.length() - 1); // remove ,
 					sb.append("]");
 					break;
@@ -658,7 +659,7 @@ public class CanvasRestController {
 
 	// get all assessments from certain course, assignment, rubric
 	// url:GET|/api/v1/courses/:course_id/rubrics/:rubric_id?include[]=assessments&style=full
-	@PostMapping("/courses/{cid}/assignments/{assignmentId}/rubrics/{rid}/{token}")
+	@PostMapping("/course/{cid}/assignment/{assignmentId}/rubric/{rid}/{token}")
 	@ResponseStatus(HttpStatus.CREATED)
 	public void importAssessments(@PathVariable long cid, @PathVariable String assignmentId, @PathVariable long rid,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token,
@@ -667,9 +668,9 @@ public class CanvasRestController {
 			return;
 
 		// 1. call API to get rubric with assessments
-		String canvasURL = getCanvasURL();
-		URL urlForGetRequest = new URL(canvasURL+"courses/" + cid + "/rubrics/"
-				+ rid + "?include[]=assessments&style=full");
+		String canvasURL = readProp("canvas.url");
+		URL urlForGetRequest = new URL(
+				canvasURL + "courses/" + cid + "/rubrics/" + rid + "?include[]=assessments&style=full");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 		connection.setRequestProperty("Authorization", "Bearer " + token);
@@ -706,7 +707,7 @@ public class CanvasRestController {
 				try {
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 					String dateInString = (String) assessmentGroupInfo.get(key);
-					if (dateInString == null || dateInString.length()==0 ) {
+					if (dateInString == null || dateInString.length() == 0) {
 						assessmentGroup.setAssessDate(null);
 					} else {
 						Date date = sdf.parse(dateInString);
@@ -753,7 +754,7 @@ public class CanvasRestController {
 			for (int j = 0; j < ratingsArray.size(); j++) {
 				JSONObject ratingJson = (JSONObject) ratingsArray.get(j);
 				Criterion criterion = criteria.get(j);
-				for (Rating r: criterion.getRatings()) {
+				for (Rating r : criterion.getRatings()) {
 					double points = Double.parseDouble(ratingJson.get("points").toString());
 					if (r.getValue() != points)
 						continue;
@@ -768,4 +769,71 @@ public class CanvasRestController {
 		}
 	}
 
+	//getting submissions of certain course and certain assignment
+	//caling GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions
+	@PostMapping("course/{cid}/assignment/{aid}/submission/{token}")
+	@ResponseStatus(HttpStatus.CREATED)
+	public List<String> importSubmissions(@PathVariable long cid, @PathVariable long aid,
+			@RequestParam(value = "token", required = true, defaultValue = "") String token)
+			throws IOException {
+
+		if (token.length() == 0)
+			return null;
+
+		//1. calling API to get JSONArray of Submissions
+		List<String> res = new ArrayList<>();
+		String canvasURL = readProp("canvas.url");
+		URL urlForGetRequest = new URL(canvasURL + "courses/"+cid+"assignments/"+aid+"/submissions");
+		String readLine = null;
+		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
+
+		connection.setRequestProperty("Authorization", "Bearer " + token);
+		connection.setRequestProperty("Content-Type", "application/json");
+		connection.setRequestMethod("GET");
+		int responseCode = connection.getResponseCode();
+		if (responseCode == HttpURLConnection.HTTP_OK) {
+			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			StringBuffer response = new StringBuffer();
+			while ((readLine = in.readLine()) != null) {
+				response.append(readLine);
+			}
+			in.close();
+			res.add(response.toString());
+		} else {
+			System.out.println("GET NOT WORKED - url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions due to " + responseCode);
+		}
+		
+		//2. Get Array and separate them as a JSONObject and tried to obtain the file URLs
+		not done.
+		//3. Download these URLs into local (on the server)
+		return res;
+	}
+
+	@GetMapping("/download")
+	// using the given url to download the file
+	public void downloadFile(String urlStr,String folder, String fileName) {
+		urlStr = "https://calstatela.instructure.com/files/3950849/download?download_frd=1&verifier=sjBQFmPivT03ZELIWmsKNYEdtUXnd14K5knUf3yg";
+		fileName = "Rubric.java";
+		folder = ""; // maybe assessmentGroup Name? 
+		String path = readProp("canvas.downloadpath");
+		try {
+			URL url = new URL(urlStr);
+			BufferedInputStream bis = new BufferedInputStream(url.openStream());
+			FileOutputStream fis;
+			SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-");  
+		    Date date = new Date(); 
+			fis = new FileOutputStream(path+folder+"\\"+formatter.format(date)+fileName);
+			byte[] buffer = new byte[1024];
+			int count = 0;
+			while ((count = bis.read(buffer, 0, 1024)) != -1) {
+				fis.write(buffer, 0, count);
+			}
+			fis.close();
+			bis.close();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
 }
