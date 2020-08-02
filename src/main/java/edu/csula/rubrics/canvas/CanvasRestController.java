@@ -773,12 +773,12 @@ public class CanvasRestController {
 	//caling GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions
 	@PostMapping("course/{cid}/assignment/{aid}/submission/{token}")
 	@ResponseStatus(HttpStatus.CREATED)
-	public List<String> importSubmissions(@PathVariable long cid, @PathVariable long aid,
+	public void importSubmissions(@PathVariable long cid, @PathVariable long aid,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token)
-			throws IOException {
+			throws IOException, ParseException {
 
 		if (token.length() == 0)
-			return null;
+			return;
 
 		//1. calling API to get JSONArray of Submissions
 		List<String> res = new ArrayList<>();
@@ -802,14 +802,30 @@ public class CanvasRestController {
 		} else {
 			System.out.println("GET NOT WORKED - url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions due to " + responseCode);
 		}
-		
+		if(res==null||res.size()==0)
+			return;
 		//2. Get Array and separate them as a JSONObject and tried to obtain the file URLs
-		not done.
+		JSONParser parser = new JSONParser(); 
+		JSONArray arr = (JSONArray) parser.parse(res.get(0));
+		for(int i=0;i<arr.size();i++)
+		{
+			JSONObject obj = (JSONObject)parser.parse(arr.get(i).toString());
+			if(obj.get("attachments")!=null)
+			{
+				JSONArray attachmentArr = (JSONArray)parser.parse(obj.get("attachments").toString());
+				for(int j=0;j<attachmentArr.size();j++)
+				{
+					JSONObject attachment = (JSONObject)parser.parse(attachmentArr.get(j).toString());
+					String downloadURL = attachment.get("url").toString();
+					String fileName = attachment.get("filename").toString();
+					downloadFile(downloadURL,"somefolder",fileName);
+				}
+			}
+		}
+		
 		//3. Download these URLs into local (on the server)
-		return res;
 	}
 
-	@GetMapping("/download")
 	// using the given url to download the file
 	public void downloadFile(String urlStr,String folder, String fileName) {
 		urlStr = "https://calstatela.instructure.com/files/3950849/download?download_frd=1&verifier=sjBQFmPivT03ZELIWmsKNYEdtUXnd14K5knUf3yg";
@@ -836,4 +852,6 @@ public class CanvasRestController {
 		}
 		
 	}
+
+
 }

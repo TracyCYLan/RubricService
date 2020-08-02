@@ -58,6 +58,13 @@ public class AssessmentController {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "AssessmentGroup not found");
 		return ag;
 	}
+	
+	@GetMapping("/rubric/{id}/assessmentgroup")
+	//return List<AssessmentGroup> using same Rubric
+	public List<AssessmentGroup> getAssessmentGroupsByRubric(@PathVariable Long id){
+		return assessmentDao.getAssessmentGroupsByRubric(id);
+	}
+	
 //	// create an evaluation. Do we need to think about how to deal with Task status?
 //	/*
 //	 * { "comments": "Average", 
