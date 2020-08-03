@@ -66,4 +66,16 @@ public class AssessmentDaoImpl implements AssessmentDao {
 
 		return entityManager.createQuery(query, AssessmentGroup.class).setParameter("rubric", rubric).getResultList();
 	}
+	
+	@Override
+	public List<AssessmentGroup> searchAssessmentGroups(String text) {
+		if (text == null || text.trim().length() == 0)
+			return null;
+		text = text.trim();
+		String query = "SELECT a.* FROM assessment_group a "
+				+ "WHERE MATCH (a.name, a.description) AGAINST (:text IN BOOLEAN MODE) "
+				+ "GROUP BY a.id";
+		text = text.replace(" ", "*");
+		return entityManager.createNativeQuery(query, AssessmentGroup.class).setParameter("text", text + "*").getResultList();
+	}
 }

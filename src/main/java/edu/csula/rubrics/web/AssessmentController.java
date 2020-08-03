@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -63,6 +64,15 @@ public class AssessmentController {
 	//return List<AssessmentGroup> using same Rubric
 	public List<AssessmentGroup> getAssessmentGroupsByRubric(@PathVariable Long id){
 		return assessmentDao.getAssessmentGroupsByRubric(id);
+	}
+	
+	@GetMapping("/assessmentgroup/search/{text}")
+	public List<AssessmentGroup> searchAssessmentGroups(@RequestParam String text) {
+		List<AssessmentGroup> groups = null;
+		if (text != null)
+			groups = assessmentDao.searchAssessmentGroups(text);
+
+		return groups;
 	}
 	
 //	// create an evaluation. Do we need to think about how to deal with Task status?

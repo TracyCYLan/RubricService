@@ -18,5 +18,7 @@ public interface AssessmentDao {
 	List<AssessmentGroup> getAssessmentGroups();
 
 	List<AssessmentGroup> getAssessmentGroupsByRubric(Long rid);
+	
+	List<AssessmentGroup> searchAssessmentGroups(String text);
 
 }
