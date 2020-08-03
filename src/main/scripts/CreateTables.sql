@@ -13,6 +13,7 @@
         description varchar(255),
         name varchar(255),
         rubric_id bigint,
+        FULLTEXT ( name , description ),
         primary key (id)
     ) engine=InnoDB;
 
