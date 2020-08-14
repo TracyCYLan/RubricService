@@ -17,6 +17,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -45,6 +47,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import edu.csula.rubrics.models.Artifact;
 import edu.csula.rubrics.models.Assessment;
 import edu.csula.rubrics.models.AssessmentGroup;
 import edu.csula.rubrics.models.Criterion;
@@ -741,12 +744,14 @@ public class CanvasRestController {
 			if (!association_type.equals("Assignment") || !association_id.equals(assignmentId))
 				continue;
 
-			// start to create Assessment:
+			// start to create Assessment ------
 			Assessment assessment = new Assessment();
 			assessment.setRubric(rubric);
 			assessment.setAssessmentGroup(assessmentGroup);
-			String assessment_type = assessmentJson.get("assessment_type").toString();
-			assessment.setType(assessment_type);
+			assessment.setType(assessmentJson.get("assessment_type").toString()); // peer_review or grading(i.e.,
+																					// instructor eval)
+//			assessment.setComments(assessmentJson.get("comments").toString());//not yet.
+
 			// get ratings and add it under this assessment
 			JSONArray ratingsArray = (JSONArray) assessmentJson.get("data");
 			List<Criterion> criteria = rubric.getCriteria();
@@ -763,27 +768,55 @@ public class CanvasRestController {
 				}
 			}
 			assessment.setRatings(ratings);
+
+			// if artifact type is Submission, see if we can download files of assessment
+			if (assessmentJson.get("artifact_type").toString().equals("Submission")) {
+				String artifact_id = assessmentJson.get("artifact_id").toString();
+
+				// call get Submissions of this assignment
+				String sub_response = getSubmissions(canvasURL, cid, assignmentId, token);
+				// find submission which has id == artifact_id
+				if (sub_response.length() > 0) {
+					JSONArray submissions = (JSONArray) parser.parse(sub_response);
+					for (int j = 0; j < submissions.size(); j++) {
+						JSONObject submission = (JSONObject) parser.parse(submissions.get(j).toString());
+						if (submission.get("id").toString().equals(artifact_id)) {
+							if (submission.get("attachments") != null) {
+								JSONArray attachments = (JSONArray) parser
+										.parse(submission.get("attachments").toString());
+								List<Artifact> artifacts = new ArrayList<>();
+								for (int k = 0; k < attachments.size(); k++) {
+									JSONObject attachment = (JSONObject) parser.parse(attachments.get(k).toString());
+									Artifact artifact = new Artifact();
+									String downloadUrl = attachment.get("url").toString();
+									String fileName = attachment.get("filename").toString();
+									artifact.setAssessment(assessment);
+									artifact.setName(fileName);
+									artifact.setPath(assessmentGroup.getName() + "\\" + assessmentGroup.getId());
+									artifact.setType("Submission");
+									downloadFile(downloadUrl,
+											assessmentGroup.getName() + "\\" + assessmentGroup.getId(), fileName);
+									artifacts.add(artifact);
+								}
+								assessment.setArtifacts(artifacts);
+							}
+							break;
+						}
+					}
+				}
+
+			}
+
+			// --- end creating assessment
 			// add assessment into assessmentGroup
 			assessment = assessmentDao.saveAssessment(assessment);
 			assessmentGroup.getAssessments().add(assessment);
 		}
 	}
 
-	//getting submissions of certain course and certain assignment
-	//caling GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions
-	@PostMapping("course/{cid}/assignment/{aid}/submission/{token}")
-	@ResponseStatus(HttpStatus.CREATED)
-	public void importSubmissions(@PathVariable long cid, @PathVariable long aid,
-			@RequestParam(value = "token", required = true, defaultValue = "") String token)
-			throws IOException, ParseException {
-
-		if (token.length() == 0)
-			return;
-
-		//1. calling API to get JSONArray of Submissions
-		List<String> res = new ArrayList<>();
-		String canvasURL = readProp("canvas.url");
-		URL urlForGetRequest = new URL(canvasURL + "courses/"+cid+"assignments/"+aid+"/submissions");
+	// get submissions
+	public String getSubmissions(String canvasURL, long cid, String assignmentId, String token) throws IOException {
+		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/assignments/" + assignmentId + "/submissions");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -798,47 +831,30 @@ public class CanvasRestController {
 				response.append(readLine);
 			}
 			in.close();
-			res.add(response.toString());
+			return response.toString();
 		} else {
-			System.out.println("GET NOT WORKED - url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions due to " + responseCode);
+			System.out.println("url failed " + urlForGetRequest.toString());
+			System.out.println(
+					"GET NOT WORKED - url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions due to "
+							+ responseCode);
 		}
-		if(res==null||res.size()==0)
-			return;
-		//2. Get Array and separate them as a JSONObject and tried to obtain the file URLs
-		JSONParser parser = new JSONParser(); 
-		JSONArray arr = (JSONArray) parser.parse(res.get(0));
-		for(int i=0;i<arr.size();i++)
-		{
-			JSONObject obj = (JSONObject)parser.parse(arr.get(i).toString());
-			if(obj.get("attachments")!=null)
-			{
-				JSONArray attachmentArr = (JSONArray)parser.parse(obj.get("attachments").toString());
-				for(int j=0;j<attachmentArr.size();j++)
-				{
-					JSONObject attachment = (JSONObject)parser.parse(attachmentArr.get(j).toString());
-					String downloadURL = attachment.get("url").toString();
-					String fileName = attachment.get("filename").toString();
-					downloadFile(downloadURL,"somefolder",fileName);
-				}
-			}
-		}
-		
-		//3. Download these URLs into local (on the server)
+		return "";
 	}
 
 	// using the given url to download the file
-	public void downloadFile(String urlStr,String folder, String fileName) {
-		urlStr = "https://calstatela.instructure.com/files/3950849/download?download_frd=1&verifier=sjBQFmPivT03ZELIWmsKNYEdtUXnd14K5knUf3yg";
-		fileName = "Rubric.java";
-		folder = ""; // maybe assessmentGroup Name? 
+	public void downloadFile(String urlStr, String folder, String fileName) {
+//		urlStr = "https://calstatela.instructure.com/files/3950849/download?download_frd=1&verifier=sjBQFmPivT03ZELIWmsKNYEdtUXnd14K5knUf3yg";
+//		fileName = "Rubric.java";
+//		folder = ""; // maybe assessmentGroup Name?
 		String path = readProp("canvas.downloadpath");
 		try {
 			URL url = new URL(urlStr);
 			BufferedInputStream bis = new BufferedInputStream(url.openStream());
 			FileOutputStream fis;
-			SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-");  
-		    Date date = new Date(); 
-			fis = new FileOutputStream(path+folder+"\\"+formatter.format(date)+fileName);
+			SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-");
+			Date date = new Date();
+			Files.createDirectories(Paths.get(path + folder));//create folder if there's no folder
+			fis = new FileOutputStream(path + folder + "\\" + formatter.format(date) + fileName);
 			byte[] buffer = new byte[1024];
 			int count = 0;
 			while ((count = bis.read(buffer, 0, 1024)) != -1) {
@@ -847,11 +863,9 @@ public class CanvasRestController {
 			fis.close();
 			bis.close();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-	}
 
+	}
 
 }

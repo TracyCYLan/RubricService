@@ -25,17 +25,16 @@ public class Artifact implements Serializable {
 	@GeneratedValue
 	private Long id;
 
+	//file name
 	@Column(nullable = false)
 	private String name;
+	
+	@Column(nullable = false)
+	private String path;
 
 	//type: e.g., submission
 	@Column(nullable = false)
 	private String type;
-
-	//the endpoint to retrieve the artifact (e.g., the endpoint of Canvas API to get submission?)
-	//e.g., url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id
-	@Column(nullable = false)
-	private String endpoint;
 
 	//this artifact should be under some certain association
     @JsonIgnore
@@ -43,10 +42,8 @@ public class Artifact implements Serializable {
     @JoinColumn(name = "association_id")
 	private Association association;
 	
-    //there will be one more many assessor assessing this artifact
-    @OneToMany(mappedBy = "artifact",
-            cascade = { CascadeType.MERGE, CascadeType.PERSIST })
-    private List<Assessment> assessments;
+    @ManyToOne
+    private Assessment assessment;
 
 	public Long getId() {
 		return id;
@@ -64,20 +61,20 @@ public class Artifact implements Serializable {
 		this.name = name;
 	}
 
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
+	}
+
 	public String getType() {
 		return type;
 	}
 
 	public void setType(String type) {
 		this.type = type;
-	}
-
-	public String getEndpoint() {
-		return endpoint;
-	}
-
-	public void setEndpoint(String endpoint) {
-		this.endpoint = endpoint;
 	}
 
 	public Association getAssociation() {
@@ -88,12 +85,12 @@ public class Artifact implements Serializable {
 		this.association = association;
 	}
 
-	public List<Assessment> getAssessments() {
-		return assessments;
+	public Assessment getAssessment() {
+		return assessment;
 	}
 
-	public void setAssessments(List<Assessment> assessments) {
-		this.assessments = assessments;
+	public void setAssessment(Assessment assessment) {
+		this.assessment = assessment;
 	}
-	
+
 }

@@ -12,6 +12,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -31,11 +32,10 @@ public class Assessment implements Serializable {
     @JoinColumn(name = "assesor_id")
     private User assessor;
     
-    //which artifact this assessment assesses
+    //one assessment might have more than one file submitted.
     @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "artifact_id")
-    private Artifact artifact;
+    @OneToMany(mappedBy = "assessment")
+    private List<Artifact> artifacts;
     
     //the assessment is under this association
     @ManyToOne
@@ -126,16 +126,16 @@ public class Assessment implements Serializable {
 		this.assessor = assessor;
 	}
 
-	public Artifact getArtifact() {
-		return artifact;
-	}
-
-	public void setArtifact(Artifact artifact) {
-		this.artifact = artifact;
-	}
-
 	public Association getAssociation() {
 		return association;
+	}
+
+	public List<Artifact> getArtifacts() {
+		return artifacts;
+	}
+
+	public void setArtifacts(List<Artifact> artifacts) {
+		this.artifacts = artifacts;
 	}
 
 	public void setAssociation(Association association) {
