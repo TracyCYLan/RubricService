@@ -33,7 +33,6 @@ public class Assessment implements Serializable {
     private User assessor;
     
     //one assessment might have more than one file submitted.
-    @JsonIgnore
     @OneToMany(mappedBy = "assessment")
     private List<Artifact> artifacts;
     

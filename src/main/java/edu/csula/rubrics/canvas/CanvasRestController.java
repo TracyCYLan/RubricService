@@ -54,6 +54,7 @@ import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.External;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Rubric;
+import edu.csula.rubrics.models.dao.ArtifactDao;
 import edu.csula.rubrics.models.dao.AssessmentDao;
 import edu.csula.rubrics.models.dao.CriterionDao;
 import edu.csula.rubrics.models.dao.ExternalDao;
@@ -75,6 +76,9 @@ public class CanvasRestController {
 
 	@Autowired
 	AssessmentDao assessmentDao;
+
+	@Autowired
+	ArtifactDao artifactDao;
 
 	final String EXTSOURCE = "Canvas";
 
@@ -752,6 +756,8 @@ public class CanvasRestController {
 																					// instructor eval)
 //			assessment.setComments(assessmentJson.get("comments").toString());//not yet.
 
+			assessment = assessmentDao.saveAssessment(assessment);
+			
 			// get ratings and add it under this assessment
 			JSONArray ratingsArray = (JSONArray) assessmentJson.get("data");
 			List<Criterion> criteria = rubric.getCriteria();
@@ -789,14 +795,17 @@ public class CanvasRestController {
 									JSONObject attachment = (JSONObject) parser.parse(attachments.get(k).toString());
 									Artifact artifact = new Artifact();
 									String downloadUrl = attachment.get("url").toString();
-									String fileName = attachment.get("filename").toString();
+									String attId = attachment.get("id").toString();
+									String fileName = attId + "-" + attachment.get("filename").toString();
 									artifact.setAssessment(assessment);
 									artifact.setName(fileName);
 									artifact.setPath(assessmentGroup.getName() + "\\" + assessmentGroup.getId());
 									artifact.setType("Submission");
-									downloadFile(downloadUrl,
-											assessmentGroup.getName() + "\\" + assessmentGroup.getId(), fileName);
-									artifacts.add(artifact);
+									if(downloadFile(downloadUrl, artifact)>=0)
+									{
+										artifact = artifactDao.saveArtifact(artifact);
+										artifacts.add(artifact);
+									}
 								}
 								assessment.setArtifacts(artifacts);
 							}
@@ -809,7 +818,6 @@ public class CanvasRestController {
 
 			// --- end creating assessment
 			// add assessment into assessmentGroup
-			assessment = assessmentDao.saveAssessment(assessment);
 			assessmentGroup.getAssessments().add(assessment);
 		}
 	}
@@ -842,19 +850,16 @@ public class CanvasRestController {
 	}
 
 	// using the given url to download the file
-	public void downloadFile(String urlStr, String folder, String fileName) {
-//		urlStr = "https://calstatela.instructure.com/files/3950849/download?download_frd=1&verifier=sjBQFmPivT03ZELIWmsKNYEdtUXnd14K5knUf3yg";
-//		fileName = "Rubric.java";
-//		folder = ""; // maybe assessmentGroup Name?
+	public int downloadFile(String urlStr, Artifact artifact) {
 		String path = readProp("canvas.downloadpath");
+		String folder = artifact.getPath();
+		String fileName = artifact.getName();
 		try {
 			URL url = new URL(urlStr);
 			BufferedInputStream bis = new BufferedInputStream(url.openStream());
 			FileOutputStream fis;
-			SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-");
-			Date date = new Date();
-			Files.createDirectories(Paths.get(path + folder));//create folder if there's no folder
-			fis = new FileOutputStream(path + folder + "\\" + formatter.format(date) + fileName);
+			Files.createDirectories(Paths.get(path + folder));// create folder if there's no folder
+			fis = new FileOutputStream(path + folder + "\\" + fileName);
 			byte[] buffer = new byte[1024];
 			int count = 0;
 			while ((count = bis.read(buffer, 0, 1024)) != -1) {
@@ -862,8 +867,10 @@ public class CanvasRestController {
 			}
 			fis.close();
 			bis.close();
+			return 0;
 		} catch (Exception e) {
 			e.printStackTrace();
+			return -1;
 		}
 
 	}

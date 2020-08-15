@@ -1,8 +1,9 @@
     create table artifacts (
        id bigint not null,
-        endpoint varchar(255) not null,
         name varchar(255) not null,
+        path varchar(255) not null,
         type varchar(255) not null,
+        assessment_id bigint,
         association_id bigint,
         primary key (id)
     ) engine=InnoDB;
@@ -13,7 +14,7 @@
         description varchar(255),
         name varchar(255),
         rubric_id bigint,
-        FULLTEXT ( name , description ),
+		FULLTEXT ( name , description ),
         primary key (id)
     ) engine=InnoDB;
 
@@ -28,9 +29,8 @@
         completed bit not null,
         date datetime(6),
         deleted bit not null,
-        artifact_id bigint,
+        type varchar(255),
         assessment_group_id bigint,
-		type varchar(255),
         assesor_id bigint,
         association_id bigint,
         rubric_id bigint,
@@ -54,7 +54,7 @@
         name varchar(255) not null,
         publish_date datetime(6),
         reusable bit not null,
-        FULLTEXT ( name , description ),
+		FULLTEXT ( name , description ),
         primary key (id)
     ) engine=InnoDB;
 
@@ -104,7 +104,7 @@
         description varchar(255) not null,
         value double precision not null,
         criterion_id bigint,
-        FULLTEXT(description),
+		FULLTEXT(description),
         primary key (id)
     ) engine=InnoDB;
 
@@ -125,7 +125,7 @@
         obsolete bit not null,
         publish_date datetime(6),
         creator_id bigint,
-         FULLTEXT(name,description),
+		FULLTEXT(name,description),
         primary key (id)
     ) engine=InnoDB;
 
@@ -162,6 +162,11 @@
        add constraint UK_r43af9ap4edm43mmtq01oddj6 unique (username);
 
     alter table artifacts 
+       add constraint FK5mx9gywdsak0qb5872dxy2c5f 
+       foreign key (assessment_id) 
+       references assessments (id);
+
+    alter table artifacts 
        add constraint FKi3xd5usajkpbuimva0k8rv7sh 
        foreign key (association_id) 
        references associations (id);
@@ -180,11 +185,6 @@
        add constraint FK85whnro40v36j4ai3c8pby0gf 
        foreign key (assessment_id) 
        references assessments (id);
-
-    alter table assessments 
-       add constraint FKc66egnd7uamp4oyucik0upfl7 
-       foreign key (artifact_id) 
-       references artifacts (id);
 
     alter table assessments 
        add constraint FKelomj2cgh9k87n3erq8j2vpeg 

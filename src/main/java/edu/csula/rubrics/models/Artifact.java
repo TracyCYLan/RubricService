@@ -1,9 +1,7 @@
 package edu.csula.rubrics.models;
 
 import java.io.Serializable;
-import java.util.List;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -42,7 +40,9 @@ public class Artifact implements Serializable {
     @JoinColumn(name = "association_id")
 	private Association association;
 	
+    @JsonIgnore
     @ManyToOne
+    @JoinColumn(name = "assessment_id")
     private Assessment assessment;
 
 	public Long getId() {
