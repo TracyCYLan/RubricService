@@ -1,8 +1,16 @@
 package edu.csula.rubrics.web;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,10 +26,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import edu.csula.rubrics.models.Artifact;
 import edu.csula.rubrics.models.Assessment;
 import edu.csula.rubrics.models.AssessmentGroup;
 import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.User;
+import edu.csula.rubrics.models.dao.ArtifactDao;
 import edu.csula.rubrics.models.dao.AssessmentDao;
 import edu.csula.rubrics.models.dao.RubricDao;
 import edu.csula.rubrics.models.dao.UserDao;
@@ -36,8 +46,22 @@ public class AssessmentController {
 
 	@Autowired
 	UserDao userDao;
-	
-	
+
+	@Autowired
+	ArtifactDao artifactDao;
+
+	private String readProp(String name) {
+		String url = "";
+		try (InputStream input = new FileInputStream("src/main/resources/application.properties")) {
+			Properties prop = new Properties();
+			prop.load(input);
+			url = prop.getProperty(name);
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+		return url;
+	}
+
 	// get certain evaluation
 	@GetMapping("/{id}")
 	public Assessment getAssessment(@PathVariable Long id) {
@@ -46,12 +70,13 @@ public class AssessmentController {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Assessment not found");
 		return assessment;
 	}
-	//get assessmentGroup
+
+	// get assessmentGroup
 	@GetMapping("/assessmentgroup")
 	public List<AssessmentGroup> getAssessmentGroups(ModelMap models) {
 		return assessmentDao.getAssessmentGroups();
 	}
-	
+
 	@GetMapping("/assessmentgroup/{id}")
 	public AssessmentGroup getAssessmentGroup(@PathVariable Long id) {
 		AssessmentGroup ag = assessmentDao.getAssessmentGroup(id);
@@ -59,13 +84,13 @@ public class AssessmentController {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "AssessmentGroup not found");
 		return ag;
 	}
-	
+
 	@GetMapping("/rubric/{id}/assessmentgroup")
-	//return List<AssessmentGroup> using same Rubric
-	public List<AssessmentGroup> getAssessmentGroupsByRubric(@PathVariable Long id){
+	// return List<AssessmentGroup> using same Rubric
+	public List<AssessmentGroup> getAssessmentGroupsByRubric(@PathVariable Long id) {
 		return assessmentDao.getAssessmentGroupsByRubric(id);
 	}
-	
+
 	@GetMapping("/assessmentgroup/search/{text}")
 	public List<AssessmentGroup> searchAssessmentGroups(@RequestParam String text) {
 		List<AssessmentGroup> groups = null;
@@ -74,7 +99,25 @@ public class AssessmentController {
 
 		return groups;
 	}
-	
+
+	// view or download file ----
+	@GetMapping("/artifact/{id}")
+	public String readFile(@PathVariable Long id) throws IOException {
+		Artifact artifact = artifactDao.getArtifact(id);
+		String path = readProp("canvas.downloadpath") + artifact.getPath() + "\\" + artifact.getName();
+		//read file and return text to web page
+		File file = new File(path);
+		BufferedReader br = new BufferedReader(new FileReader(file));
+		StringBuilder sb = new StringBuilder();
+		String s;
+		while ((s = br.readLine()) != null)
+		{
+			sb.append(s);
+			sb.append("\n");
+		}
+		
+		return sb.toString();
+	}
 //	// create an evaluation. Do we need to think about how to deal with Task status?
 //	/*
 //	 * { "comments": "Average", 
@@ -95,6 +138,5 @@ public class AssessmentController {
 //		evaluation = evaluationDao.saveEvaluation(evaluation);
 //		return evaluation.getId();
 //	}
-	
 
 }
