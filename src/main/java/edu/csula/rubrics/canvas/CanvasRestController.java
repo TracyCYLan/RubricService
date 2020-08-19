@@ -104,7 +104,7 @@ public class CanvasRestController {
 			return null;
 
 		List<String> res = new ArrayList<>();
-		String canvasURL = readProp("canvas.url");
+		String canvasURL = readProp("canvas.url") + "api/v1/";
 		URL urlForGetRequest = new URL(canvasURL + "courses");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
@@ -138,7 +138,7 @@ public class CanvasRestController {
 		int pageNum = 1;
 		StringBuilder sb = new StringBuilder();
 		List<String> res = new ArrayList<>();
-		String canvasURL = readProp("canvas.url");
+		String canvasURL = readProp("canvas.url") + "api/v1/";
 		while (pageNum >= 1 && pageNum < 10) // for now I set limitation at most we can have 500 rubrics
 		{
 			URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/rubrics?page=" + pageNum + "&per_page=50");
@@ -190,7 +190,7 @@ public class CanvasRestController {
 
 		if (token.length() == 0)
 			return (long) -1;
-		String canvasURL = readProp("canvas.url");
+		String canvasURL = readProp("canvas.url") + "api/v1/";
 		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/rubrics/" + rid);
 
 		String readLine = null;
@@ -294,7 +294,7 @@ public class CanvasRestController {
 		if (token.length() == 0)
 			return null;
 		List<String> res = new ArrayList<>();
-		String canvasURL = readProp("canvas.url");
+		String canvasURL = readProp("canvas.url") + "api/v1/";
 		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/outcome_group_links");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
@@ -330,7 +330,7 @@ public class CanvasRestController {
 			return (long) -1;
 
 		// get certain canvas outcome
-		String canvasURL = readProp("canvas.url");
+		String canvasURL = readProp("canvas.url") + "api/v1/";
 		URL urlForGetRequest = new URL(canvasURL + "outcomes/" + id);
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
@@ -422,7 +422,7 @@ public class CanvasRestController {
 
 		// 2. use url:POST|/api/v1/courses/:course_id/outcome_groups/:id/outcomes to ADD
 		// OUTCOME to Canvas
-		String canvasURL = readProp("canvas.url");
+		String canvasURL = readProp("canvas.url") + "api/v1/";
 		try {
 			URL url = new URL(canvasURL + "courses/" + courseId + "/outcome_groups/" + outcome_group_Id + "/outcomes");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -476,9 +476,10 @@ public class CanvasRestController {
 		if (token.length() == 0)
 			return null;
 
+		String canvasURL = readProp("canvas.url") + "api/v1/";
+
 		List<String> res = new ArrayList<>();
-		URL urlForGetRequest = new URL(
-				"https://calstatela.instructure.com:443/api/v1/courses/" + cid + "/outcome_groups");
+		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/outcome_groups");
 		String readLine = null;
 		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
 
@@ -551,7 +552,7 @@ public class CanvasRestController {
 
 		// 4. use url:POST|/api/v1/courses/:course_id/rubrics to add rubric in Canvas
 		try {
-			String canvasURL = readProp("canvas.url");
+			String canvasURL = readProp("canvas.url") + "api/v1/";
 			URL url = new URL(canvasURL + "courses/" + courseId + "/rubrics");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
@@ -621,7 +622,7 @@ public class CanvasRestController {
 		int pageNum = 1;
 		StringBuilder sb = new StringBuilder();
 		List<String> res = new ArrayList<>();
-		String canvasURL = readProp("canvas.url");
+		String canvasURL = readProp("canvas.url") + "api/v1/";
 		while (pageNum >= 1 && pageNum < 10) // for now I set limitation at most we can have 500 assignments
 		{
 			URL urlForGetRequest = new URL(
@@ -675,7 +676,7 @@ public class CanvasRestController {
 			return;
 
 		// 1. call API to get rubric with assessments
-		String canvasURL = readProp("canvas.url");
+		String canvasURL = readProp("canvas.url") + "api/v1/";
 		URL urlForGetRequest = new URL(
 				canvasURL + "courses/" + cid + "/rubrics/" + rid + "?include[]=assessments&style=full");
 		String readLine = null;
@@ -757,7 +758,7 @@ public class CanvasRestController {
 //			assessment.setComments(assessmentJson.get("comments").toString());//not yet.
 
 			assessment = assessmentDao.saveAssessment(assessment);
-			
+
 			// get ratings and add it under this assessment
 			JSONArray ratingsArray = (JSONArray) assessmentJson.get("data");
 			List<Criterion> criteria = rubric.getCriteria();
@@ -802,8 +803,7 @@ public class CanvasRestController {
 									artifact.setPath(assessmentGroup.getName() + "\\" + assessmentGroup.getId());
 									artifact.setType("Submission");
 									artifact.setContentType(attachment.get("content-type").toString());
-									if(downloadFile(downloadUrl, artifact)>=0)
-									{
+									if (downloadFile(downloadUrl, artifact) >= 0) {
 										artifact = artifactDao.saveArtifact(artifact);
 										artifacts.add(artifact);
 									}

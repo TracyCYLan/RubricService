@@ -26,6 +26,18 @@ import io.jsonwebtoken.Jwts;
 @RequestMapping("/canvas")
 public class CanvasController {
 
+	private String readProp(String name) {
+		String url = "";
+		try (InputStream input = new FileInputStream("src/main/resources/application.properties")) {
+			Properties prop = new Properties();
+			prop.load(input);
+			url = prop.getProperty(name);
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+		return url;
+	}
+	
 	@GetMapping("/hello")
 	public String hello(Model model,
 			@RequestParam(value = "name", required = false, defaultValue = "World") String name) {
@@ -51,10 +63,11 @@ public class CanvasController {
 		if (dkID.length() == 0 || dkKey.length() == 0)
 			return "";
 
+		String canvasURL = readProp("canvas.url");
 		// call Canvas POST API to get Token
 		String token = "";
 		try {
-			URL url = new URL("https://calstatela.instructure.com:443/login/oauth2/token");
+			URL url = new URL(canvasURL+"login/oauth2/token");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
 			conn.setRequestMethod("POST");
