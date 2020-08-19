@@ -33,6 +33,9 @@ public class Artifact implements Serializable {
 	//type: e.g., submission
 	@Column(nullable = false)
 	private String type;
+	
+	@Column(nullable = false)
+	private String contentType;
 
 	//this artifact should be under some certain association
     @JsonIgnore
@@ -67,6 +70,14 @@ public class Artifact implements Serializable {
 
 	public void setPath(String path) {
 		this.path = path;
+	}
+
+	public String getContentType() {
+		return contentType;
+	}
+
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
 	}
 
 	public String getType() {

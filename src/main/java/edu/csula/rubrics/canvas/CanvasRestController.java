@@ -801,6 +801,7 @@ public class CanvasRestController {
 									artifact.setName(fileName);
 									artifact.setPath(assessmentGroup.getName() + "\\" + assessmentGroup.getId());
 									artifact.setType("Submission");
+									artifact.setContentType(attachment.get("content-type").toString());
 									if(downloadFile(downloadUrl, artifact)>=0)
 									{
 										artifact = artifactDao.saveArtifact(artifact);
