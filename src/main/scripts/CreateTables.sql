@@ -3,7 +3,7 @@
         name varchar(255) not null,
         path varchar(255) not null,
         type varchar(255) not null,
-        contentType varchar(255) not null,
+        content_type varchar(255) not null,
         assessment_id bigint,
         association_id bigint,
         primary key (id)

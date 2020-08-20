@@ -34,7 +34,7 @@ public class Artifact implements Serializable {
 	@Column(nullable = false)
 	private String type;
 	
-	@Column(nullable = false)
+	@Column(name = "content_type", nullable = false)
 	private String contentType;
 
 	//this artifact should be under some certain association
