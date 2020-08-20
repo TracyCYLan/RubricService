@@ -677,6 +677,7 @@ public class CanvasRestController {
 
 		// 1. call API to get rubric with assessments
 		String canvasURL = readProp("canvas.url") + "api/v1/";
+		
 		URL urlForGetRequest = new URL(
 				canvasURL + "courses/" + cid + "/rubrics/" + rid + "?include[]=assessments&style=full");
 		String readLine = null;
@@ -687,7 +688,7 @@ public class CanvasRestController {
 		int responseCode = connection.getResponseCode();
 
 		if (responseCode != HttpURLConnection.HTTP_OK) {
-			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id} due to " + responseCode);
+			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id}?include[]=assessments&style=full due to " + responseCode);
 			return;
 		}
 
@@ -754,7 +755,7 @@ public class CanvasRestController {
 			assessment.setRubric(rubric);
 			assessment.setAssessmentGroup(assessmentGroup);
 			assessment.setType(assessmentJson.get("assessment_type").toString()); // peer_review or grading(i.e.,
-																					// instructor eval)
+																					// instructor evaluations)
 //			assessment.setComments(assessmentJson.get("comments").toString());//not yet.
 
 			assessment = assessmentDao.saveAssessment(assessment);
@@ -769,13 +770,14 @@ public class CanvasRestController {
 				for (Rating r : criterion.getRatings()) {
 					double points = Double.parseDouble(ratingJson.get("points").toString());
 					if (r.getValue() != points)
-						continue;
+						continue;	
 					ratings.add(r);
 					break;
 				}
 			}
 			assessment.setRatings(ratings);
-
+			assessment = assessmentDao.saveAssessment(assessment);
+			
 			// if artifact type is Submission, see if we can download files of assessment
 			if (assessmentJson.get("artifact_type").toString().equals("Submission")) {
 				String artifact_id = assessmentJson.get("artifact_id").toString();
