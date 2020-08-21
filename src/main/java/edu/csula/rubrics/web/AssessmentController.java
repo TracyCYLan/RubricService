@@ -64,9 +64,9 @@ public class AssessmentController {
 	@Autowired
 	ArtifactDao artifactDao;
 
-	private String readProp(String name) {
+	private String readProp(String file, String name) {
 		String url = "";
-		try (InputStream input = new FileInputStream("src/main/resources/application.properties")) {
+		try (InputStream input = new FileInputStream("src/main/resources/" + file)) {
 			Properties prop = new Properties();
 			prop.load(input);
 			url = prop.getProperty(name);
@@ -119,7 +119,7 @@ public class AssessmentController {
 	public String readFile(@PathVariable Long id) throws IOException {
 		Artifact artifact = artifactDao.getArtifact(id);
 		String fileName = artifact.getName();
-		String path = readProp("canvas.downloadpath") + artifact.getPath() + "\\" + fileName;
+		String path = readProp("application.properties", "canvas.downloadpath") + artifact.getPath() + "\\" + fileName;
 		// read file and return text to web page
 		File file = new File(path);
 		BufferedReader br = new BufferedReader(new FileReader(file));
@@ -133,28 +133,39 @@ public class AssessmentController {
 		return sb.toString();
 	}
 
+	//if extension is not in the default file, means we need download the file instead just read it
+	@GetMapping("/artifact/download/{extension}")
+	public boolean checkDownloadNeeded(@PathVariable String extension) {
+		String contentType = readProp("types.properties", extension.toLowerCase());
+		return contentType==null;
+	}
 	// download file to user local ---
 	@GetMapping("/artifact/{id}/download")
-	public ResponseEntity<byte[] > download(@PathVariable Long id) throws IOException {
+	public void download(@PathVariable Long id, HttpServletResponse response) throws IOException {
 		Artifact artifact = artifactDao.getArtifact(id);
 		String fileName = artifact.getName();
-		String filePath = readProp("canvas.downloadpath") + artifact.getPath() + "\\" + fileName;
-		String contentType = artifact.getContentType();
+		String extension = fileName.substring(fileName.lastIndexOf(".") + 1, fileName.length());
+		String contentType = readProp("types.properties", extension.toLowerCase());
+		if (contentType == null)
+			contentType = artifact.getContentType();
+		String filePath = readProp("application.properties", "canvas.downloadpath") + artifact.getPath() + "\\"
+				+ fileName;
 
 		File file = new File(filePath);
-//--------
+
+		response.setContentType(contentType);
+		response.setHeader("Content-Disposition", "inline;filename=" + file.getName());
+		BufferedInputStream inStrem = new BufferedInputStream(new FileInputStream(file));
+		BufferedOutputStream outStream = new BufferedOutputStream(response.getOutputStream());
+
+		byte[] buffer = new byte[1024];
+		int bytesRead = 0;
+		while ((bytesRead = inStrem.read(buffer)) != -1) {
+			outStream.write(buffer, 0, bytesRead);
+		}
+		outStream.flush();
+		inStrem.close();
 		
-		Path path = Paths.get(filePath);
-		byte[] data = Files.readAllBytes(path);
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentDispositionFormData("attachment", fileName);
-		headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-		return new ResponseEntity<>(data, headers, HttpStatus.OK);
-//		ByteArrayResource resource = new ByteArrayResource(data);
-//
-//		return ResponseEntity.ok()
-//				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + path.getFileName().toString())
-//				.contentType(MediaType.parseMediaType(contentType)).contentLength(data.length).body(resource);
 	}
 //	// create an evaluation. Do we need to think about how to deal with Task status?
 //	/*
