@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS assessment_ratings;
 DROP TABLE IF EXISTS assessment_group;
 DROP TABLE IF EXISTS assessments;
 DROP TABLE IF EXISTS associations;
+DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS criteria;
 DROP TABLE IF EXISTS criterion_tags;
 DROP TABLE IF EXISTS hibernate_sequence;

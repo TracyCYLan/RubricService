@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import edu.csula.rubrics.models.Assessment;
 import edu.csula.rubrics.models.AssessmentGroup;
+import edu.csula.rubrics.models.Comment;
 import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.dao.AssessmentDao;
 import edu.csula.rubrics.models.dao.RubricDao;
@@ -54,6 +55,18 @@ public class AssessmentDaoImpl implements AssessmentDao {
 	@Override
 	public List<AssessmentGroup> getAssessmentGroups() {
 		return entityManager.createQuery("from AssessmentGroup", AssessmentGroup.class).getResultList();
+	}
+	
+	@Override
+	public Comment getComment(Long id) {
+		return entityManager.find( Comment.class, id );
+	}
+
+	//add a new comment
+	@Override
+	@Transactional
+	public Comment saveComment(Comment comment) {
+		return entityManager.merge( comment );
 	}
 	
 	@Override

@@ -154,7 +154,7 @@ public class AssessmentController {
 		File file = new File(filePath);
 
 		response.setContentType(contentType);
-		response.setHeader("Content-Disposition", "inline;filename=" + file.getName());
+		response.setHeader("Content-Disposition", "inline;filename=\"" + file.getName() + "\"");
 		BufferedInputStream inStrem = new BufferedInputStream(new FileInputStream(file));
 		BufferedOutputStream outStream = new BufferedOutputStream(response.getOutputStream());
 

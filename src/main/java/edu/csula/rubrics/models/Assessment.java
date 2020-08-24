@@ -58,27 +58,25 @@ public class Assessment implements Serializable {
     @JoinColumn(name = "assessment_group_id")
     private AssessmentGroup assessmentGroup;
     
-    @ManyToMany
-    @JoinTable(name = "assessment_ratings",
-    joinColumns = @JoinColumn(name = "assessment_id"),
-    inverseJoinColumns = @JoinColumn(name = "rating_id"))
-    private List<Rating> ratings;
+//    @ManyToMany
+//    @JoinTable(name = "assessment_ratings",
+//    joinColumns = @JoinColumn(name = "assessment_id"),
+//    inverseJoinColumns = @JoinColumn(name = "rating_id"))
+//    private List<Rating> ratings;
+    
+    @OneToMany(mappedBy = "assessment")
+    private List<Comment> comments;
     
     //assessment_type, e.g., peer_review, grading
     private String type;
 
-    private String comments;
-
     private Date date;
-
-    private boolean completed;
 
     private boolean deleted;
     
     public Assessment()
     {
-        ratings = new ArrayList<Rating>();
-        completed = false;
+//        ratings = new ArrayList<Rating>();
         deleted = false;
     }
 
@@ -88,26 +86,17 @@ public class Assessment implements Serializable {
         this.assessor = assessor;
     }
 
-    public Double getOverallRating()
-    {
-        if( !completed ) return null;
-
-        Double overallRating = 0.0;
-        for( Rating rating : ratings )
-            overallRating += rating.getValue();
-        overallRating /= ratings.size();
-
-        return overallRating;
-    }
-
-    public void setCompleted()
-    {
-        if( completed ) return;
-        for( Rating rating : ratings )
-            if( rating.getValue()<0 ) return;
-
-        completed = true;
-    }
+//    public Double getOverallRating()
+//    {
+//        if( !completed ) return null;
+//
+//        Double overallRating = 0.0;
+//        for( Rating rating : ratings )
+//            overallRating += rating.getValue();
+//        overallRating /= ratings.size();
+//
+//        return overallRating;
+//    }
 
 	public Long getId() {
 		return id;
@@ -149,19 +138,19 @@ public class Assessment implements Serializable {
 		this.task = task;
 	}
 
-	public List<Rating> getRatings() {
-		return ratings;
-	}
+//	public List<Rating> getRatings() {
+//		return ratings;
+//	}
+//
+//	public void setRatings(List<Rating> ratings) {
+//		this.ratings = ratings;
+//	}
 
-	public void setRatings(List<Rating> ratings) {
-		this.ratings = ratings;
-	}
-
-	public String getComments() {
+	public List<Comment> getComments() {
 		return comments;
 	}
 
-	public void setComments(String comments) {
+	public void setComments(List<Comment> comments) {
 		this.comments = comments;
 	}
 
@@ -171,14 +160,6 @@ public class Assessment implements Serializable {
 
 	public void setDate(Date date) {
 		this.date = date;
-	}
-
-	public boolean isCompleted() {
-		return completed;
-	}
-
-	public void setCompleted(boolean completed) {
-		this.completed = completed;
 	}
 
 	public boolean isDeleted() {

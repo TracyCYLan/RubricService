@@ -50,6 +50,7 @@ import org.springframework.web.server.ResponseStatusException;
 import edu.csula.rubrics.models.Artifact;
 import edu.csula.rubrics.models.Assessment;
 import edu.csula.rubrics.models.AssessmentGroup;
+import edu.csula.rubrics.models.Comment;
 import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.External;
 import edu.csula.rubrics.models.Rating;
@@ -756,14 +757,13 @@ public class CanvasRestController {
 			assessment.setAssessmentGroup(assessmentGroup);
 			assessment.setType(assessmentJson.get("assessment_type").toString()); // peer_review or grading(i.e.,
 																					// instructor evaluations)
-//			assessment.setComments(assessmentJson.get("comments").toString());//not yet.
 
 			assessment = assessmentDao.saveAssessment(assessment);
 
 			// get ratings and add it under this assessment
 			JSONArray ratingsArray = (JSONArray) assessmentJson.get("data");
 			List<Criterion> criteria = rubric.getCriteria();
-			List<Rating> ratings = new ArrayList<>();
+			List<Comment> comments = new ArrayList<>();
 			for (int j = 0; j < ratingsArray.size(); j++) {
 				JSONObject ratingJson = (JSONObject) ratingsArray.get(j);
 				Criterion criterion = criteria.get(j);
@@ -771,11 +771,16 @@ public class CanvasRestController {
 					double points = Double.parseDouble(ratingJson.get("points").toString());
 					if (r.getValue() != points)
 						continue;	
-					ratings.add(r);
+					Comment comment = new Comment();
+					comment.setContent(ratingJson.get("comments").toString());
+					comment = assessmentDao.saveComment(comment);
+					comment.setRating(r);
+					comment.setAssessment(assessment);
+					comments.add(comment);
 					break;
 				}
 			}
-			assessment.setRatings(ratings);
+			assessment.setComments(comments);
 			assessment = assessmentDao.saveAssessment(assessment);
 			
 			// if artifact type is Submission, see if we can download files of assessment
@@ -799,10 +804,10 @@ public class CanvasRestController {
 									Artifact artifact = new Artifact();
 									String downloadUrl = attachment.get("url").toString();
 									String attId = attachment.get("id").toString();
-									String fileName = attId + "-" + attachment.get("filename").toString();
+									String fileName = attId + "-" + attachment.get("display_name").toString(); // filename
 									artifact.setAssessment(assessment);
 									artifact.setName(fileName);
-									artifact.setPath(assessmentGroup.getName() + "\\" + assessmentGroup.getId());
+									artifact.setPath(assessmentGroup.getId()+"");
 									artifact.setType("Submission");
 									artifact.setContentType(attachment.get("content-type").toString());
 									if (downloadFile(downloadUrl, artifact) >= 0) {
