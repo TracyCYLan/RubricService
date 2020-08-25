@@ -137,7 +137,7 @@ public class AssessmentController {
 	@GetMapping("/artifact/download/{extension}")
 	public boolean checkDownloadNeeded(@PathVariable String extension) {
 		String contentType = readProp("types.properties", extension.toLowerCase());
-		return contentType==null;
+		return contentType==null || !contentType.equals("text/plain");
 	}
 	// download file to user local ---
 	@GetMapping("/artifact/{id}/download")
