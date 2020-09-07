@@ -1,5 +1,11 @@
 package edu.csula.rubrics.web;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -19,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -66,7 +73,7 @@ public class RubricController {
 	 */
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public Long addRubric(@RequestBody Rubric rubric) {
+	public Long addRubric(@RequestBody Rubric rubric) throws IOException {
 		rubric = rubricDao.saveRubric(rubric);
 		return rubric.getId();
 	}
@@ -85,20 +92,23 @@ public class RubricController {
 		rubric.setLastUpdatedDate(new Date());
 		rubricDao.saveRubric(rubric);
 	}
+
 	@DeleteMapping("/{rid}/criterion/{cid}")
 	public void removeCriterionOfRubric(@PathVariable long rid, @PathVariable long cid) {
 		Rubric rubric = rubricDao.getRubric(rid);
 		if (rubric == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
 		List<Criterion> criteria = rubric.getCriteria();
-		
+
 		criteria.remove(criterionDao.getCriterion(cid));
 		rubric.setLastUpdatedDate(new Date());
 		rubricDao.saveRubric(rubric);
 	}
-	//changeOrderOfCriterionInRubric
+
+	// changeOrderOfCriterionInRubric
 	@PatchMapping("/{rid}/criteria/{order1}/{order2}")
-	public void changeCriteriaOrderInRubric(@PathVariable long rid,@PathVariable int order1,@PathVariable int order2) {
+	public void changeCriteriaOrderInRubric(@PathVariable long rid, @PathVariable int order1,
+			@PathVariable int order2) {
 		Rubric rubric = rubricDao.getRubric(rid);
 		if (rubric == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
@@ -106,6 +116,7 @@ public class RubricController {
 		Collections.swap(criteria, order1, order2);
 		rubricDao.saveRubric(rubric);
 	}
+
 	// send an array of criteria id and add them to rubric
 	@PostMapping("/{rid}/criteria")
 	public void addCriteriaUnderRubric(@PathVariable long rid, @RequestBody long[] cids) {
@@ -224,12 +235,9 @@ public class RubricController {
 				try {
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 					String dateInString = (String) update.get(key);
-					if(dateInString==null)
-					{
+					if (dateInString == null) {
 						rubric.setPublishDate(null);
-					}
-					else
-					{
+					} else {
 						Date date = sdf.parse(dateInString);
 						Calendar calendar = Calendar.getInstance();
 						calendar.setTime(date);
@@ -246,20 +254,23 @@ public class RubricController {
 		rubric.setLastUpdatedDate(new Date());
 		rubricDao.saveRubric(rubric);
 	}
-	//publish rubric
+
+	// publish rubric
 	@PutMapping("/publish/{id}")
 	public void publishRubric(@PathVariable Long id) {
 		Rubric rubric = rubricDao.getRubric(id);
 		rubric.setPublishDate(Calendar.getInstance());
 		rubricDao.saveRubric(rubric);
 	}
-	//publish criterion
+
+	// publish criterion
 	@PutMapping("/criterion/publish/{id}")
 	public void publishCriterion(@PathVariable Long id) {
 		Criterion criterion = criterionDao.getCriterion(id);
 		criterion.setPublishDate(Calendar.getInstance());
 		criterionDao.saveCriterion(criterion);
 	}
+
 	// edit properties of criteria.
 	@PatchMapping("/criterion/{id}")
 	public void editCriterion(@PathVariable Long id, @RequestBody Criterion updatedCriterion) {
@@ -290,7 +301,7 @@ public class RubricController {
 		for (Tag tag : updatedCriterion.getTags())
 			newTags.add(createTag(tag));
 		criterion.setTags(newTags);
-	
+
 		criterionDao.saveCriterion(criterion);
 	}
 
