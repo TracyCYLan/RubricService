@@ -21,7 +21,7 @@
 			</button>
 	</nav>
 	<div class="container">
-	<button class="btn btn-primary" onclick="window.location.href='https://alice.cysun.org'">Back to Rubric Service</button>
+	<button class="btn btn-primary" onclick="window.location.href='https://alice.cysun.org/tlan'">Back to Rubric Service</button>
 	<script type="text/javascript">
     		sessionStorage.setItem('canvasToken', `${token}`);
 	</script> 
