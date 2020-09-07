@@ -66,26 +66,25 @@ public class UserController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long addUser(@RequestBody User user) {
 		System.out.println("name: "+user.getUsername());
-		System.out.println("pwd: "+user.getPassword());
 		user = userDao.saveUser(user);
 		return user.getId();
 	}
 
-	//login
-	@PostMapping("/login")
-    public ResponseEntity<String> loginUser(@RequestBody User user, HttpServletResponse res) {
-    	User u = userDao.getUserByUsername(user.getUsername());
-		if (u == null || !u.getPassword().equals(user.getPassword()))
-			return ResponseEntity.ok().body("invalid user");
-		
-		String token = getJWTToken(u);
-        Cookie cookie = new Cookie("rubric-alice-token", token);
-        cookie.setPath("/");
-        cookie.setHttpOnly(false);
-        res.setHeader("Access-Control-Allow-Credentials", "true");
-        res.addCookie(cookie);
-        return ResponseEntity.ok().body(token);
-    }
+//	//login
+//	@PostMapping("/login")
+//    public ResponseEntity<String> loginUser(@RequestBody User user, HttpServletResponse res) {
+//    	User u = userDao.getUserByUsername(user.getUsername());
+//		if (u == null || !u.getPassword().equals(user.getPassword()))
+//			return ResponseEntity.ok().body("invalid user");
+//		
+//		String token = getJWTToken(u);
+//        Cookie cookie = new Cookie("rubric-alice-token", token);
+//        cookie.setPath("/");
+//        cookie.setHttpOnly(false);
+//        res.setHeader("Access-Control-Allow-Credentials", "true");
+//        res.addCookie(cookie);
+//        return ResponseEntity.ok().body(token);
+//    }
 
 	private String getJWTToken(User user) {
 		String secretKey = "alice-rubric-secret!";
