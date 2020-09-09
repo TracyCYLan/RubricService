@@ -1,6 +1,8 @@
 package edu.csula.rubrics;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,12 +12,14 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import edu.csula.rubrics.jwt.filter.JWTAuthorizationFilter;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
@@ -43,8 +47,31 @@ public class RubricsApplication {
 		protected void configure(HttpSecurity http) throws Exception {
 			http.cors().and().authorizeRequests()
 			.antMatchers(HttpMethod.GET, "/rubric/**").permitAll()
-			.anyRequest().authenticated().and().oauth2ResourceServer().jwt();
+			.antMatchers(HttpMethod.GET, "/**").hasAuthority("rubric-service")
+			.antMatchers(HttpMethod.POST, "/**").hasAuthority("rubric-service")
+			.antMatchers(HttpMethod.PUT, "/**").hasAuthority("rubric-service")
+			.antMatchers(HttpMethod.PATCH, "/**").hasAuthority("rubric-service")
+			.antMatchers(HttpMethod.DELETE, "/**").hasAuthority("rubric-service")
+			.anyRequest().authenticated()
+			.and().oauth2ResourceServer().jwt()
+			.jwtAuthenticationConverter(new JwtAuthenticationConverter()
+            {
+                @Override
+                protected Collection<GrantedAuthority> extractAuthorities(final Jwt jwt)
+                {
+                    Collection<GrantedAuthority> authorities = super.extractAuthorities(jwt);
+                    List<String> scopes= jwt.getClaimAsStringList("scope");
+                    if(scopes!=null && scopes.contains("rubric-service"))//rubric-service
+                    {
+                    	authorities.add(new SimpleGrantedAuthority("rubric-service" ));
+                    }
+                    return authorities;
+                }
+            });
+
 		}
+	
+		
 
 		// solve the error: has been blocked by CORS policy
 		@Bean
