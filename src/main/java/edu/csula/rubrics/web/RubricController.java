@@ -1,11 +1,6 @@
 package edu.csula.rubrics.web;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -13,6 +8,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,7 +22,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -36,8 +32,10 @@ import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.Tag;
+import edu.csula.rubrics.models.User;
 import edu.csula.rubrics.models.dao.CriterionDao;
 import edu.csula.rubrics.models.dao.RubricDao;
+import edu.csula.rubrics.models.dao.UserDao;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -49,6 +47,9 @@ public class RubricController {
 
 	@Autowired
 	CriterionDao criterionDao;
+	
+	@Autowired
+	UserDao userDao;
 
 	// get ALL rubrics
 	@GetMapping
@@ -73,7 +74,16 @@ public class RubricController {
 	 */
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public Long addRubric(@RequestBody Rubric rubric) throws IOException {
+	public Long addRubric(@RequestBody Rubric rubric, HttpServletRequest request) throws IOException {
+		String sub = request.getHeader("alice_sub");
+		User user = userDao.getUserBySub(sub);
+		if(user==null)
+		{
+			user = new User();
+			user.setSub(sub);
+			user = userDao.saveUser(user);
+		}
+		rubric.setCreator(user);
 		rubric = rubricDao.saveRubric(rubric);
 		return rubric.getId();
 	}
