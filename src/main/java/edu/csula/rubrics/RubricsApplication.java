@@ -80,9 +80,8 @@ public class RubricsApplication {
 			configuration.setAllowCredentials(true);
 			configuration.setAllowedHeaders(Arrays.asList("Access-Control-Allow-Headers", "Access-Control-Allow-Origin",
 					"Access-Control-Request-Method", "Access-Control-Request-Headers", "Origin", "Cache-Control",
-					"Content-Type", "Authorization"));
-//			configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000","https://alice.cysun.org"));
-			configuration.setAllowedOrigins(Arrays.asList("*"));
+					"Content-Type", "Authorization", "alice_sub"));
+			configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000","https://alice.cysun.org"));
 			configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE"));
 			UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 			source.registerCorsConfiguration("/**", configuration);
