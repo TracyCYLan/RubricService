@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -72,10 +74,20 @@ public class RubricController {
 	 * "using swagger to add this rubric", "name": "swagger test rubric",
 	 * "obsolete": false, "public": true, "published": true }
 	 */
-	@PostMapping
+	@PostMapping("/{sub}")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Long addRubric(@RequestBody Rubric rubric, HttpServletRequest request) throws IOException {
-		String sub = request.getHeader("alice_sub");
+	public Long addRubric(@RequestBody Rubric rubric,@RequestParam String sub) throws IOException {
+//		Enumeration<String> headerNames = request.getHeaderNames();
+//
+//	    if (headerNames != null) {
+//	            while (headerNames.hasMoreElements()) {
+//	            		String temp = headerNames.nextElement();
+//	                    System.out.println(temp+": " + request.getHeader(temp));
+//	            }
+//	    }
+//		String sub = request.getHeader("alice_sub");
+		if(sub==null||sub.length()==0)
+			throw new AccessDeniedException("403 returned");
 		User user = userDao.getUserBySub(sub);
 		if(user==null)
 		{
