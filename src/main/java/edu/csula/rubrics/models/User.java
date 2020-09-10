@@ -18,10 +18,10 @@ public class User implements Serializable {
 	@GeneratedValue
 	private Long id;
 	
-	@Column
+	@Column(nullable = false, unique = true)
 	private String sub; //id of oidc-server
 	
-	@Column(nullable = false, unique = true)
+	@Column
     private String username;
 
 	@Column

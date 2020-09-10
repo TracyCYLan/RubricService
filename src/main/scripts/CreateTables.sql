@@ -15,7 +15,7 @@
         description varchar(255),
         name varchar(255),
         rubric_id bigint,
-		FULLTEXT ( name , description ),
+        FULLTEXT ( name , description ),
         primary key (id)
     ) engine=InnoDB;
 
@@ -56,7 +56,7 @@
         name varchar(255) not null,
         publish_date datetime(6),
         reusable bit not null,
-		FULLTEXT ( name , description ),        
+        FULLTEXT ( name , description ),  
         primary key (id)
     ) engine=InnoDB;
 
@@ -153,12 +153,12 @@
 
     create table users (
        id bigint not null,
-        cin varchar(255),
+        email varchar(255),
         first_name varchar(255),
         last_name varchar(255),
         middle_name varchar(255),
-        password varchar(255) not null,
-        username varchar(255) not null,
+        sub varchar(255) not null,
+        username varchar(255),
         primary key (id)
     ) engine=InnoDB;
 
