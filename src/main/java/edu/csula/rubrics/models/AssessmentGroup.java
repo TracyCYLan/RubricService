@@ -39,6 +39,10 @@ public class AssessmentGroup {
     @ManyToOne
     @JoinColumn(name = "rubric_id")
     private Rubric rubric;
+    
+    @ManyToOne
+    @JoinColumn(name = "creator_id")
+    private User creator; //who imported this assessmentGroup
 
     public AssessmentGroup() {
     	assessments = new ArrayList<Assessment>();
@@ -91,6 +95,13 @@ public class AssessmentGroup {
 	public void setAssessments(List<Assessment> assessments) {
 		this.assessments = assessments;
 	}
-    
+
+	public User getCreator() {
+		return creator;
+	}
+
+	public void setCreator(User creator) {
+		this.creator = creator;
+	}
     
 }

@@ -1,5 +1,6 @@
 package edu.csula.rubrics.canvas;
 
+import org.apache.commons.codec.binary.Base64;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -25,8 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,11 +49,13 @@ import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.External;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Rubric;
+import edu.csula.rubrics.models.User;
 import edu.csula.rubrics.models.dao.ArtifactDao;
 import edu.csula.rubrics.models.dao.AssessmentDao;
 import edu.csula.rubrics.models.dao.CriterionDao;
 import edu.csula.rubrics.models.dao.ExternalDao;
 import edu.csula.rubrics.models.dao.RubricDao;
+import edu.csula.rubrics.models.dao.UserDao;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -71,6 +77,9 @@ public class CanvasRestController {
 	@Autowired
 	ArtifactDao artifactDao;
 
+	@Autowired
+	UserDao userDao;
+
 	final String EXTSOURCE = "Canvas";
 
 	private String readProp(String name) {
@@ -83,6 +92,20 @@ public class CanvasRestController {
 			ex.printStackTrace();
 		}
 		return url;
+	}
+
+	// get sub from access_token
+	private String getSub(HttpServletRequest request) throws ParseException {
+		if (request.getHeader("Authorization") == null || request.getHeader("Authorization").length() == 0)
+			return "";
+		String token = request.getHeader("Authorization").split(" ")[1]; // get jwt from header
+		String encodedPayload = token.split("\\.")[1]; // get second encoded part in jwt
+		Base64 base64Url = new Base64(true);
+		String payload = new String(base64Url.decode(encodedPayload));
+
+		JSONParser parser = new JSONParser();
+		JSONObject claimsObj = (JSONObject) parser.parse(payload);
+		return claimsObj.get("sub").toString();
 	}
 
 	// get ALL courses via given canvasToken
@@ -114,6 +137,7 @@ public class CanvasRestController {
 			res.add(response.toString());
 		} else {
 			System.out.println("GET NOT WORKED - url:GET|/api/v1/courses due to " + responseCode);
+			throw new AccessDeniedException("403 returned");
 		}
 		return res;
 	}
@@ -165,6 +189,7 @@ public class CanvasRestController {
 				pageNum++;
 			} else {
 				System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics due to " + responseCode);
+				throw new AccessDeniedException("403 returned");
 			}
 		}
 		res.add(sb.toString());
@@ -176,11 +201,20 @@ public class CanvasRestController {
 	@PostMapping("/course/{cid}/rubric/{rid}/{token}")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long importRubric(@PathVariable long cid, @PathVariable long rid,
-			@RequestParam(value = "token", required = true, defaultValue = "") String token)
+			@RequestParam(value = "token", required = true, defaultValue = "") String token, HttpServletRequest request)
 			throws IOException, ParseException {
 
-		if (token.length() == 0)
-			return (long) -1;
+		String sub = getSub(request);
+		if (token.length() == 0 || sub == null || sub.length() == 0)
+			throw new AccessDeniedException("403 returned");
+
+		User user = userDao.getUserBySub(sub);
+		if (user == null) {
+			user = new User();
+			user.setSub(sub);
+			user = userDao.saveUser(user);
+		}
+
 		String canvasURL = readProp("canvas.url") + "api/v1/";
 		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/rubrics/" + rid);
 
@@ -194,7 +228,7 @@ public class CanvasRestController {
 
 		if (responseCode != HttpURLConnection.HTTP_OK) {
 			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id} due to " + responseCode);
-			return (long) -1;
+			throw new AccessDeniedException("403 returned");
 		}
 
 		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -204,11 +238,11 @@ public class CanvasRestController {
 		}
 		in.close();
 
-		return importRubricHelper(response.toString());
+		return importRubricHelper(response.toString(), user);
 
 	}
 
-	private long importRubricHelper(String response) throws ParseException {
+	private long importRubricHelper(String response, User user) throws ParseException {
 
 		// 1. create rubric
 		Rubric rubric = new Rubric();
@@ -225,9 +259,7 @@ public class CanvasRestController {
 		String rubric_name = rubricJson.get("title").toString();
 		rubric.setName(rubric_name);
 		rubric.setPublishDate(Calendar.getInstance());
-		// here is to get current user id
-		// then we can uncomment below
-//						rubric.setCreator(ID); //I think creator type should be also extUserId and extSource? 
+		rubric.setCreator(user);
 		rubric = rubricDao.saveRubric(rubric);
 
 		// 2. bind rubric with ID in external source (Canvas in this case)
@@ -245,7 +277,7 @@ public class CanvasRestController {
 			String criterion_desc = criterionJson.get("long_description").toString();
 			String criterion_extid = criterionJson.get("id").toString();
 			Criterion criterion = new Criterion();
-
+			criterion.setCreator(user);
 			criterion.setName(criterion_name);
 			criterion.setDescription(criterion_desc);
 			criterion.setReusable(false);
@@ -304,6 +336,7 @@ public class CanvasRestController {
 			res.add(response.toString());
 		} else {
 			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/outcome_group_links due to " + responseCode);
+			throw new AccessDeniedException("403 returned");
 		}
 		return res;
 	}
@@ -313,12 +346,19 @@ public class CanvasRestController {
 	@PostMapping("/criterion/{id}/{token}")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long importCriterion(@PathVariable long id,
-			@RequestParam(value = "token", required = true, defaultValue = "") String token)
+			@RequestParam(value = "token", required = true, defaultValue = "") String token, HttpServletRequest request)
 			throws IOException, ParseException {
 
-		// check if contains Canvas Token
-		if (token.length() == 0)
-			return (long) -1;
+		String sub = getSub(request);
+		if (token.length() == 0 || sub == null || sub.length() == 0)
+			throw new AccessDeniedException("403 returned");
+
+		User user = userDao.getUserBySub(sub);
+		if (user == null) {
+			user = new User();
+			user.setSub(sub);
+			user = userDao.saveUser(user);
+		}
 
 		// get certain canvas outcome
 		String canvasURL = readProp("canvas.url") + "api/v1/";
@@ -352,6 +392,7 @@ public class CanvasRestController {
 			else {
 				criterion.setName(criterion_name);
 				criterion.setDescription(criterion_desc);
+				criterion.setCreator(user);
 				criterion.setReusable(true); // since the outcome we can import from Canvas is definitely reusable
 				criterion = criterionDao.saveCriterion(criterion);
 
@@ -377,6 +418,7 @@ public class CanvasRestController {
 
 		} else {
 			System.out.println("GET NOT WORKED - /api/v1/outcomes/:id due to " + responseCode);
+			throw new AccessDeniedException("403 returned");
 		}
 
 		return criterion.getId();
@@ -488,6 +530,7 @@ public class CanvasRestController {
 		} else {
 			System.out.println(
 					"GET NOT WORKED - url:GET|/api/v1/courses/:course_id/outcome_groups due to " + responseCode);
+			throw new AccessDeniedException("403 returned");
 		}
 		return res;
 	}
@@ -650,6 +693,7 @@ public class CanvasRestController {
 				pageNum++;
 			} else {
 				System.out.println("GET NOT WORKED - /v1/courses/{course_id}/assignments due to " + responseCode);
+				throw new AccessDeniedException("403 returned");
 			}
 		}
 		res.add(sb.toString());
@@ -662,13 +706,22 @@ public class CanvasRestController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public void importAssessments(@PathVariable long cid, @PathVariable String assignmentId, @PathVariable long rid,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token,
-			@RequestBody Map<String, Object> assessmentGroupInfo) throws IOException, ParseException {
-		if (token.length() == 0)
-			return;
+			@RequestBody Map<String, Object> assessmentGroupInfo, HttpServletRequest request)
+			throws IOException, ParseException {
+		String sub = getSub(request);
+		if (token.length() == 0 || sub == null || sub.length() == 0)
+			throw new AccessDeniedException("403 returned");
+
+		User user = userDao.getUserBySub(sub);
+		if (user == null) {
+			user = new User();
+			user.setSub(sub);
+			user = userDao.saveUser(user);
+		}
 
 		// 1. call API to get rubric with assessments
 		String canvasURL = readProp("canvas.url") + "api/v1/";
-		
+
 		URL urlForGetRequest = new URL(
 				canvasURL + "courses/" + cid + "/rubrics/" + rid + "?include[]=assessments&style=full");
 		String readLine = null;
@@ -679,8 +732,10 @@ public class CanvasRestController {
 		int responseCode = connection.getResponseCode();
 
 		if (responseCode != HttpURLConnection.HTTP_OK) {
-			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id}?include[]=assessments&style=full due to " + responseCode);
-			return;
+			System.out.println(
+					"GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id}?include[]=assessments&style=full due to "
+							+ responseCode);
+			throw new AccessDeniedException("403 returned");
 		}
 
 		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -690,10 +745,11 @@ public class CanvasRestController {
 		}
 		in.close();
 		// 2. import Rubric and Criterion, Ratings under it if needed
-		Rubric rubric = rubricDao.getRubric(importRubricHelper(response.toString()));
+		Rubric rubric = rubricDao.getRubric(importRubricHelper(response.toString(), user));
 		// 3. create AssessmentGroup
 		AssessmentGroup assessmentGroup = new AssessmentGroup();
 		assessmentGroup.setRubric(rubric);
+		assessmentGroup.setCreator(user);
 		// update assessmentgroup information
 		for (String key : assessmentGroupInfo.keySet()) {
 			switch (key) {
@@ -760,7 +816,7 @@ public class CanvasRestController {
 				for (Rating r : criterion.getRatings()) {
 					double points = Double.parseDouble(ratingJson.get("points").toString());
 					if (r.getValue() != points)
-						continue;	
+						continue;
 					Comment comment = new Comment();
 					comment.setContent(ratingJson.get("comments").toString());
 					comment = assessmentDao.saveComment(comment);
@@ -772,7 +828,7 @@ public class CanvasRestController {
 			}
 			assessment.setComments(comments);
 			assessment = assessmentDao.saveAssessment(assessment);
-			
+
 			// if artifact type is Submission, see if we can download files of assessment
 			if (assessmentJson.get("artifact_type").toString().equals("Submission")) {
 				String artifact_id = assessmentJson.get("artifact_id").toString();
@@ -797,7 +853,7 @@ public class CanvasRestController {
 									String fileName = attId + "-" + attachment.get("display_name").toString(); // filename
 									artifact.setAssessment(assessment);
 									artifact.setName(fileName);
-									artifact.setPath(assessmentGroup.getId()+"");
+									artifact.setPath(assessmentGroup.getId() + "");
 									artifact.setType("Submission");
 									artifact.setContentType(attachment.get("content-type").toString());
 									if (downloadFile(downloadUrl, artifact) >= 0) {
@@ -838,13 +894,13 @@ public class CanvasRestController {
 			}
 			in.close();
 			return response.toString();
-		} else {
-			System.out.println("url failed " + urlForGetRequest.toString());
-			System.out.println(
-					"GET NOT WORKED - url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions due to "
-							+ responseCode);
 		}
-		return "";
+		System.out.println("url failed " + urlForGetRequest.toString());
+		System.out.println(
+				"GET NOT WORKED - url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions due to "
+						+ responseCode);
+		throw new AccessDeniedException("403 returned");
+
 	}
 
 	// using the given url to download the file

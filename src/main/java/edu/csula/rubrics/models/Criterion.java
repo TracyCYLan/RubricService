@@ -16,6 +16,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
@@ -60,7 +61,11 @@ public class Criterion implements Serializable {
 	
 	@Column(name = "publish_date")
 	private Calendar publishDate;
-
+	
+    @ManyToOne
+    @JoinColumn(name = "creator_id")
+    private User creator;
+    
 	public Criterion() {
 		ratings = new ArrayList<Rating>();
 		tags = new ArrayList<Tag>();
@@ -150,6 +155,14 @@ public class Criterion implements Serializable {
 
 	public void setPublishDate(Calendar publishDate) {
 		this.publishDate = publishDate;
+	}
+
+	public User getCreator() {
+		return creator;
+	}
+
+	public void setCreator(User creator) {
+		this.creator = creator;
 	}
 
 }
