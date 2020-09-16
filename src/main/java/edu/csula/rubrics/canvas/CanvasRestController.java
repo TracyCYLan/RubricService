@@ -541,8 +541,8 @@ public class CanvasRestController {
 	@PostMapping("/rubric/{id}/export/course/{courseId}/{token}")
 	@ResponseStatus(HttpStatus.CREATED)
 	public void exportRubric(@PathVariable long courseId, @PathVariable long id,
-			@RequestParam(value = "token", required = true, defaultValue = "") String token)
-			throws IOException, ParseException {
+			@RequestParam(value = "token", required = true, defaultValue = "") String token,
+			@RequestBody Map<String, String> assignmentInfo) throws IOException, ParseException {
 		if (token.length() == 0)
 			return;
 
@@ -585,8 +585,9 @@ public class CanvasRestController {
 		object.put("rubric_association", rubric_association);
 
 		// 4. use url:POST|/api/v1/courses/:course_id/rubrics to add rubric in Canvas
+		String canvasURL = readProp("canvas.url") + "api/v1/";
+		String rubric_extid = "";
 		try {
-			String canvasURL = readProp("canvas.url") + "api/v1/";
 			URL url = new URL(canvasURL + "courses/" + courseId + "/rubrics");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
@@ -617,7 +618,7 @@ public class CanvasRestController {
 				JSONParser parser = new JSONParser();
 				JSONObject responseJson = (JSONObject) parser.parse(response.toString());
 				JSONObject rubricJson = (JSONObject) responseJson.get("rubric");
-				String rubric_extid = rubricJson.get("id").toString();
+				rubric_extid = rubricJson.get("id").toString();
 
 				// bind export rubric's ID with rubric on Rubric Service (also criteria under
 				// rubric)
@@ -641,9 +642,108 @@ public class CanvasRestController {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new AccessDeniedException("403 returned");
+		}
+		// 6. create an assignment if needed
+		if (assignmentInfo.getOrDefault("name", "").length() == 0)
+			return;
+		String assignmentName = assignmentInfo.get("name");
+		String ext_assignmentId = "";
+		try {
+			ext_assignmentId = createAssignment(canvasURL, courseId, assignmentName, token);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new AccessDeniedException("403 returned");
+		}
+		// 7. if created an assignment, we also need to bind rubric and assignment
+		try {
+			bindAssignmentAndRubric(canvasURL, courseId, rubric_extid, ext_assignmentId, token);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new AccessDeniedException("403 returned");
 		}
 	}
 
+	// calling url:POST|/api/v1/courses/:course_id/assignments
+	private String createAssignment(String canvasURL, long courseId, String assignmentName, String token) {
+		try {
+			URL url = new URL(canvasURL + "courses/" + courseId + "/assignments");
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+			conn.setRequestMethod("POST");
+			conn.setRequestProperty("Authorization", "Bearer " + token);
+			conn.setRequestProperty("Content-Type", "application/json");
+			conn.setDoOutput(true);
+
+			JSONObject object = new JSONObject();
+			JSONObject assignment = new JSONObject();
+			assignment.put("name", assignmentName);
+			object.put("assignment", assignment);
+			String jsonInputString = object.toString();
+
+			OutputStream os = conn.getOutputStream();
+			os.write(jsonInputString.getBytes());
+			os.flush();
+
+			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK && conn.getResponseCode() != HttpURLConnection.HTTP_CREATED ) {
+				throw new RuntimeException("Failed to create assignment: HTTP error code : " + conn.getResponseCode());
+			}
+
+			// 5. get Response Body and return the external assignment ID
+			try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
+				StringBuilder response = new StringBuilder();
+				String responseLine = null;
+				while ((responseLine = br.readLine()) != null) {
+					response.append(responseLine.trim());
+				}
+				// convert response body to JSONObject
+				JSONParser parser = new JSONParser();
+				JSONObject responseJson = (JSONObject) parser.parse(response.toString());
+				return responseJson.get("id").toString();
+			} catch (Exception e) {
+				System.out.println("failed to get response when creating assignment: "+e.getMessage());
+				throw new AccessDeniedException("403 returned");
+			}
+
+		} catch (Exception e) {
+			System.out.println("failde to do POST|/api/v1/courses/:course_id/assignments: "+e.getMessage());
+			throw new AccessDeniedException("403 returned");
+		}
+	}
+
+	// calling url:POST|/api/v1/courses/:course_id/rubric_associations 
+	private void bindAssignmentAndRubric(String canvasURL, long courseId, String rubricId, String assId, String token) {
+		try {
+			URL url = new URL(canvasURL + "courses/" + courseId + "/rubric_associations");
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+			conn.setRequestMethod("POST");
+			conn.setRequestProperty("Authorization", "Bearer " + token);
+			conn.setRequestProperty("Content-Type", "application/json");
+			conn.setDoOutput(true);
+			
+			JSONObject object = new JSONObject();
+			JSONObject association = new JSONObject();
+			association.put("rubric_id", Integer.valueOf(rubricId));
+			association.put("association_id", Integer.valueOf(assId));
+			association.put("association_type", "Assignment");
+			association.put("purpose", "grading");
+			object.put("rubric_association", association);
+			String jsonInputString = object.toString();
+
+			OutputStream os = conn.getOutputStream();
+			os.write(jsonInputString.getBytes());
+			os.flush();
+
+			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+				throw new RuntimeException("Failed to bind assignment with rubric: HTTP error code : " + conn.getResponseCode());
+			}
+
+		}catch(Exception e) {
+			System.out.println("POST|/api/v1/courses/:course_id/rubric_associations failed: "+e.getMessage());
+			throw new AccessDeniedException("403 returned");
+		}
+	}
 	// get all assignments from certain course
 	// url:GET|/api/v1/courses/:course_id/assignments
 	@RequestMapping(value = "course/{cid}/assignment/{token}", method = RequestMethod.GET, produces = "application/json")
