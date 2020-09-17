@@ -14,8 +14,9 @@
         assess_date datetime(6),
         description varchar(255),
         name varchar(255),
+        creator_id bigint,
         rubric_id bigint,
-        FULLTEXT ( name , description ),
+        FULLTEXT (name,description),
         primary key (id)
     ) engine=InnoDB;
 
@@ -56,7 +57,8 @@
         name varchar(255) not null,
         publish_date datetime(6),
         reusable bit not null,
-        FULLTEXT ( name , description ),  
+        creator_id bigint,
+        FULLTEXT (name,description),
         primary key (id)
     ) engine=InnoDB;
 
@@ -163,7 +165,7 @@
     ) engine=InnoDB;
 
     alter table users 
-       add constraint UK_r43af9ap4edm43mmtq01oddj6 unique (username);
+       add constraint UK_mtuf0eryuefwgkh9e3m5jdn8t unique (sub);
 
     alter table artifacts 
        add constraint FK5mx9gywdsak0qb5872dxy2c5f 
@@ -174,6 +176,11 @@
        add constraint FKi3xd5usajkpbuimva0k8rv7sh 
        foreign key (association_id) 
        references associations (id);
+
+    alter table assessment_group 
+       add constraint FKqwo6yb1tdfj7giknxnolu72t7 
+       foreign key (creator_id) 
+       references users (id);
 
     alter table assessment_group 
        add constraint FKrc4njigx5qwgrlfe5tfcmui1j 
@@ -219,6 +226,11 @@
        add constraint FKe3087q6lb6xq4cm11ypkhcqkm 
        foreign key (rating_id) 
        references ratings (id);
+
+    alter table criteria 
+       add constraint FKhl2p5ds4rim1iujnbkpoc5ju4 
+       foreign key (creator_id) 
+       references users (id);
 
     alter table criterion_tags 
        add constraint FKi7hmj6w4cwfju9raklytid47o 
