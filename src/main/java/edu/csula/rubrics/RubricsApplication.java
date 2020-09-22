@@ -47,6 +47,7 @@ public class RubricsApplication {
 		protected void configure(HttpSecurity http) throws Exception {
 			http.cors().and().authorizeRequests()
 			.antMatchers(HttpMethod.GET, "/rubric/**").permitAll()
+			.antMatchers(HttpMethod.GET, "/canvas/oauth_callback").permitAll()
 			.antMatchers(HttpMethod.GET, "/**").hasAuthority("rubric-service")
 			.antMatchers(HttpMethod.POST, "/**").hasAuthority("rubric-service")
 			.antMatchers(HttpMethod.PUT, "/**").hasAuthority("rubric-service")
