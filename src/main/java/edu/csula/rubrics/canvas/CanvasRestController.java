@@ -645,17 +645,23 @@ public class CanvasRestController {
 			throw new AccessDeniedException("403 returned");
 		}
 		// 6. create an assignment if needed
-		if (assignmentInfo.getOrDefault("name", "").length() == 0)
-			return;
-		String assignmentName = assignmentInfo.get("name");
-		String ext_assignmentId = "";
-		try {
-			ext_assignmentId = createAssignment(canvasURL, courseId, assignmentName, token);
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new AccessDeniedException("403 returned");
+		String assignmentName = assignmentInfo.getOrDefault("name", "");
+		String ext_assignmentId = assignmentInfo.getOrDefault("id", "");
+		
+		//means no need to bind rubric with any assignment at all
+		if (assignmentName.length() == 0 && ext_assignmentId.length() == 0)
+			return; 
+		
+		if(assignmentName.length()>0) //i.e., assignmentId is empty
+		{
+			try {
+				ext_assignmentId = createAssignment(canvasURL, courseId, assignmentName, token);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new AccessDeniedException("403 returned");
+			}
 		}
-		// 7. if created an assignment, we also need to bind rubric and assignment
+		// 7. after getting assignment id, we also need to bind rubric and assignment
 		try {
 			bindAssignmentAndRubric(canvasURL, courseId, rubric_extid, ext_assignmentId, token);
 		} catch (Exception e) {
