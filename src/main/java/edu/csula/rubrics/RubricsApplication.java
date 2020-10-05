@@ -62,7 +62,7 @@ public class RubricsApplication {
                 {
                     Collection<GrantedAuthority> authorities = super.extractAuthorities(jwt);
                     List<String> scopes= jwt.getClaimAsStringList("scope");
-                    if(scopes!=null && scopes.contains("rubric-service"))//rubric-service
+                    if(scopes!=null && scopes.contains("alice-rubric-service-api"))//check if user has the scope rubric-service
                     {
                     	authorities.add(new SimpleGrantedAuthority("rubric-service" ));
                     }
