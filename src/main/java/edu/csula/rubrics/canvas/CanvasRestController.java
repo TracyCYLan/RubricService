@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -119,26 +120,8 @@ public class CanvasRestController {
 
 		List<String> res = new ArrayList<>();
 		String canvasURL = readProp("canvas.url") + "api/v1/";
-		URL urlForGetRequest = new URL(canvasURL + "courses");
-		String readLine = null;
-		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-
-		connection.setRequestProperty("Authorization", "Bearer " + token);
-		connection.setRequestProperty("Content-Type", "application/json");
-		connection.setRequestMethod("GET");
-		int responseCode = connection.getResponseCode();
-		if (responseCode == HttpURLConnection.HTTP_OK) {
-			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			StringBuffer response = new StringBuffer();
-			while ((readLine = in.readLine()) != null) {
-				response.append(readLine);
-			}
-			in.close();
-			res.add(response.toString());
-		} else {
-			System.out.println("GET NOT WORKED - url:GET|/api/v1/courses due to " + responseCode);
-			throw new AccessDeniedException("403 returned");
-		}
+		String response = canvasGETHelper(canvasURL + "courses", token);
+		res.add(response);
 		return res;
 	}
 
@@ -316,28 +299,10 @@ public class CanvasRestController {
 			@RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException {
 		if (token.length() == 0)
 			return null;
-		List<String> res = new ArrayList<>();
 		String canvasURL = readProp("canvas.url") + "api/v1/";
-		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/outcome_group_links");
-		String readLine = null;
-		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-
-		connection.setRequestProperty("Authorization", "Bearer " + token);
-		connection.setRequestProperty("Content-Type", "application/json");
-		connection.setRequestMethod("GET");
-		int responseCode = connection.getResponseCode();
-		if (responseCode == HttpURLConnection.HTTP_OK) {
-			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			StringBuffer response = new StringBuffer();
-			while ((readLine = in.readLine()) != null) {
-				response.append(readLine);
-			}
-			in.close();
-			res.add(response.toString());
-		} else {
-			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/outcome_group_links due to " + responseCode);
-			throw new AccessDeniedException("403 returned");
-		}
+		List<String> res = new ArrayList<>();
+		String response = canvasGETHelper(canvasURL + "courses/" + cid + "/outcome_group_links", token);
+		res.add(response);
 		return res;
 	}
 
@@ -647,19 +612,25 @@ public class CanvasRestController {
 		// 6. create an assignment if needed
 		String assignmentName = assignmentInfo.getOrDefault("name", "");
 		String ext_assignmentId = assignmentInfo.getOrDefault("id", "");
-		
-		//means no need to bind rubric with any assignment at all
+
+		// means no need to bind rubric with any assignment at all
 		if (assignmentName.length() == 0 && ext_assignmentId.length() == 0)
-			return; 
-		
-		if(assignmentName.length()>0) //i.e., assignmentId is empty
+			return;
+
+		// check if need to assign peer review
+		String groupCategoryId = assignmentInfo.getOrDefault("group_category_id", "");
+
+		if (assignmentName.length() > 0) // i.e., assignmentId is empty
 		{
 			try {
-				ext_assignmentId = createAssignment(canvasURL, courseId, assignmentName, token);
+				ext_assignmentId = createAssignment(canvasURL, courseId, assignmentName, token, groupCategoryId);
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new AccessDeniedException("403 returned");
 			}
+		} else if (groupCategoryId.length() > 0) // means existed assignment id but we want to assign peer review
+		{
+			updateAssignment(canvasURL, courseId, token, ext_assignmentId, groupCategoryId);
 		}
 		// 7. after getting assignment id, we also need to bind rubric and assignment
 		try {
@@ -668,10 +639,150 @@ public class CanvasRestController {
 			e.printStackTrace();
 			throw new AccessDeniedException("403 returned");
 		}
+		// 8. assign peer review if needed
+		assignPeerReviews(canvasURL, courseId, groupCategoryId, ext_assignmentId, token);
+	}
+
+	// get ALL group categories in this certain course via given canvasToken
+	// calling url:GET|/api/v1/courses
+	@RequestMapping(value = "/course/{courseId}/group_category/{token}", method = RequestMethod.GET, produces = "application/json")
+	public List<String> getGroupCategories(@PathVariable long courseId,@RequestParam(value = "token", required = true, defaultValue = "") String token)
+			throws IOException {
+
+		if (token.length() == 0)
+			return null;
+
+		List<String> res = new ArrayList<>();
+		String canvasURL = readProp("canvas.url") + "api/v1/";
+		String response = canvasGETHelper(canvasURL + "courses/"+courseId+"/group_categories", token);
+		res.add(response);
+		return res;
+	}
+	private void assignPeerReviews(String canvasURL, long courseId, String groupCategoryId, String assignmentId,
+			String token) {
+		if (groupCategoryId.length() == 0)
+			return;
+
+		JSONParser parser = new JSONParser();
+		// 1. store users and its corresponding submissionId
+		Map<String, String> userMap = new HashMap<>();// userId - submissionId
+		try {
+			String submission_response = getSubmissions(canvasURL, courseId, assignmentId, token);
+			JSONArray submissionArr = (JSONArray) parser.parse(submission_response);
+			for (int i = 0; i < submissionArr.size(); i++) {
+				JSONObject obj = (JSONObject) parser.parse(submissionArr.get(i).toString());
+				userMap.put(obj.get("user_id").toString(), obj.get("id").toString());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new AccessDeniedException("403 returned");
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+
+		// 2. get all group id of this group category
+		String groups_response = canvasGETHelper(canvasURL + "group_categories/" + groupCategoryId + "/groups", token);
+		try {
+			JSONArray groupArr = (JSONArray) parser.parse(groups_response);
+			for (int i = 0; i < groupArr.size(); i++) {
+				JSONObject obj = (JSONObject) parser.parse(groupArr.get(i).toString());
+				String groupId = obj.get("id").toString();
+				// 3. get all users in this group
+				String users_response = canvasGETHelper(canvasURL + "groups/" + groupId + "/users", token);
+				List<String> userIds = new ArrayList<>();// store all userIds in this group
+				JSONArray userArr = (JSONArray) parser.parse(users_response);
+				for (int j = 0; j < userArr.size(); j++) {
+					JSONObject user = (JSONObject) parser.parse(userArr.get(j).toString());
+					userIds.add(user.get("id").toString());
+				}
+				// 4. traverse all users and assign peer reviews to the other users in this same
+				// group (i.e., userId in userIds)
+				for (int t = 0; t < userIds.size(); t++) {
+					String userId = userIds.get(t);
+					for (int s = 0; s < userIds.size(); s++) {
+						if (t == s)
+							continue;
+						String submissionId = userMap.get(userIds.get(s));
+						assignPeerReviewHelper(canvasURL, courseId, assignmentId, submissionId, userId, token);
+					}
+				}
+			}
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	// POST|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:submission_id/peer_reviews
+	private void assignPeerReviewHelper(String canvasURL, long courseId, String assignmentId, String submissionId,
+			String userId, String token) {
+		String api = canvasURL + "courses/" + courseId + "/assignments/" + assignmentId + "/submissions/" + submissionId
+				+ "/peer_reviews";
+		JSONObject object = new JSONObject();
+		object.put("user_id", userId);
+		canvasPOSTHelper(api, object, token);
+	}
+
+	// canvas calling helper only for GET
+	private String canvasGETHelper(String api, String token) {
+		try {
+			URL url = new URL(api);
+			String readLine = null;
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+			connection.setRequestProperty("Authorization", "Bearer " + token);
+			connection.setRequestProperty("Content-Type", "application/json");
+			connection.setRequestMethod("GET");
+			int responseCode = connection.getResponseCode();
+			if (responseCode == HttpURLConnection.HTTP_OK) {
+				BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+				StringBuffer response = new StringBuffer();
+				while ((readLine = in.readLine()) != null) {
+					response.append(readLine);
+				}
+				in.close();
+				return response.toString();
+			} else {
+				System.out.println("GET NOT WORKED - " + api + " due to " + responseCode);
+				throw new AccessDeniedException("403 returned");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new AccessDeniedException("403 returned");
+		}
+	}
+
+	//canvas calling helper only for POST //haven't able to get response of POST
+	private void canvasPOSTHelper(String api, JSONObject object, String token) {
+		try {
+			URL url = new URL(api);
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+			conn.setRequestMethod("POST");
+			conn.setRequestProperty("Authorization", "Bearer " + token);
+			conn.setRequestProperty("Content-Type", "application/json");
+			conn.setDoOutput(true);
+
+			String jsonInputString = object.toString();
+
+			OutputStream os = conn.getOutputStream();
+			os.write(jsonInputString.getBytes());
+			os.flush();
+
+			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK
+					&& conn.getResponseCode() != HttpURLConnection.HTTP_CREATED) {
+				throw new RuntimeException("Failed to create peer review: HTTP error code : " + conn.getResponseCode());
+			}
+		} catch (Exception e) {
+			System.out.println("failde to do POST " + api + e.getMessage());
+			throw new AccessDeniedException("403 returned");
+		}
+
 	}
 
 	// calling url:POST|/api/v1/courses/:course_id/assignments
-	private String createAssignment(String canvasURL, long courseId, String assignmentName, String token) {
+	private String createAssignment(String canvasURL, long courseId, String assignmentName, String token,
+			String groupCategoryId) {
 		try {
 			URL url = new URL(canvasURL + "courses/" + courseId + "/assignments");
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -684,6 +795,11 @@ public class CanvasRestController {
 			JSONObject object = new JSONObject();
 			JSONObject assignment = new JSONObject();
 			assignment.put("name", assignmentName);
+			if (groupCategoryId.length() > 0)
+			{
+				assignment.put("group_category_id", groupCategoryId);
+				assignment.put("peer_reviews", true);
+			}
 			object.put("assignment", assignment);
 			String jsonInputString = object.toString();
 
@@ -691,7 +807,8 @@ public class CanvasRestController {
 			os.write(jsonInputString.getBytes());
 			os.flush();
 
-			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK && conn.getResponseCode() != HttpURLConnection.HTTP_CREATED ) {
+			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK
+					&& conn.getResponseCode() != HttpURLConnection.HTTP_CREATED) {
 				throw new RuntimeException("Failed to create assignment: HTTP error code : " + conn.getResponseCode());
 			}
 
@@ -707,17 +824,50 @@ public class CanvasRestController {
 				JSONObject responseJson = (JSONObject) parser.parse(response.toString());
 				return responseJson.get("id").toString();
 			} catch (Exception e) {
-				System.out.println("failed to get response when creating assignment: "+e.getMessage());
+				System.out.println("failed to get response when creating assignment: " + e.getMessage());
 				throw new AccessDeniedException("403 returned");
 			}
 
 		} catch (Exception e) {
-			System.out.println("failde to do POST|/api/v1/courses/:course_id/assignments: "+e.getMessage());
+			System.out.println("failde to do POST|/api/v1/courses/:course_id/assignments: " + e.getMessage());
 			throw new AccessDeniedException("403 returned");
 		}
 	}
 
-	// calling url:POST|/api/v1/courses/:course_id/rubric_associations 
+	// calling url:PUT|/api/v1/courses/:course_id/assignments/:id
+	private void updateAssignment(String canvasURL, long courseId, String token, String ext_assignmentId,
+			String groupCategoryId) {
+		try {
+			URL url = new URL(canvasURL + "courses/" + courseId + "/assignments/" + ext_assignmentId);
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+			conn.setRequestMethod("PUT");
+			conn.setRequestProperty("Authorization", "Bearer " + token);
+			conn.setRequestProperty("Content-Type", "application/json");
+			conn.setDoOutput(true);
+
+			JSONObject object = new JSONObject();
+			JSONObject assignment = new JSONObject();
+			assignment.put("group_category_id", groupCategoryId);
+			assignment.put("peer_reviews", true);
+			object.put("assignment", assignment);
+			String jsonInputString = object.toString();
+
+			OutputStream os = conn.getOutputStream();
+			os.write(jsonInputString.getBytes());
+			os.flush();
+
+			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+				throw new RuntimeException("Failed to update assignment: HTTP error code : " + conn.getResponseCode());
+			}
+
+		} catch (Exception e) {
+			System.out.println("failde to do url:PUT|/api/v1/courses/:course_id/assignments/:id: " + e.getMessage());
+			throw new AccessDeniedException("403 returned");
+		}
+	}
+
+	// calling url:POST|/api/v1/courses/:course_id/rubric_associations
 	private void bindAssignmentAndRubric(String canvasURL, long courseId, String rubricId, String assId, String token) {
 		try {
 			URL url = new URL(canvasURL + "courses/" + courseId + "/rubric_associations");
@@ -727,7 +877,7 @@ public class CanvasRestController {
 			conn.setRequestProperty("Authorization", "Bearer " + token);
 			conn.setRequestProperty("Content-Type", "application/json");
 			conn.setDoOutput(true);
-			
+
 			JSONObject object = new JSONObject();
 			JSONObject association = new JSONObject();
 			association.put("rubric_id", Integer.valueOf(rubricId));
@@ -742,14 +892,16 @@ public class CanvasRestController {
 			os.flush();
 
 			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-				throw new RuntimeException("Failed to bind assignment with rubric: HTTP error code : " + conn.getResponseCode());
+				throw new RuntimeException(
+						"Failed to bind assignment with rubric: HTTP error code : " + conn.getResponseCode());
 			}
 
-		}catch(Exception e) {
-			System.out.println("POST|/api/v1/courses/:course_id/rubric_associations failed: "+e.getMessage());
+		} catch (Exception e) {
+			System.out.println("POST|/api/v1/courses/:course_id/rubric_associations failed: " + e.getMessage());
 			throw new AccessDeniedException("403 returned");
 		}
 	}
+
 	// get all assignments from certain course
 	// url:GET|/api/v1/courses/:course_id/assignments
 	@RequestMapping(value = "course/{cid}/assignment/{token}", method = RequestMethod.GET, produces = "application/json")
@@ -984,28 +1136,30 @@ public class CanvasRestController {
 
 	// get submissions
 	public String getSubmissions(String canvasURL, long cid, String assignmentId, String token) throws IOException {
-		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/assignments/" + assignmentId + "/submissions");
-		String readLine = null;
-		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-
-		connection.setRequestProperty("Authorization", "Bearer " + token);
-		connection.setRequestProperty("Content-Type", "application/json");
-		connection.setRequestMethod("GET");
-		int responseCode = connection.getResponseCode();
-		if (responseCode == HttpURLConnection.HTTP_OK) {
-			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			StringBuffer response = new StringBuffer();
-			while ((readLine = in.readLine()) != null) {
-				response.append(readLine);
-			}
-			in.close();
-			return response.toString();
-		}
-		System.out.println("url failed " + urlForGetRequest.toString());
-		System.out.println(
-				"GET NOT WORKED - url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions due to "
-						+ responseCode);
-		throw new AccessDeniedException("403 returned");
+		String api = canvasURL + "courses/" + cid + "/assignments/" + assignmentId + "/submissions";
+		return canvasGETHelper(api, token);
+//		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/assignments/" + assignmentId + "/submissions");
+//		String readLine = null;
+//		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
+//
+//		connection.setRequestProperty("Authorization", "Bearer " + token);
+//		connection.setRequestProperty("Content-Type", "application/json");
+//		connection.setRequestMethod("GET");
+//		int responseCode = connection.getResponseCode();
+//		if (responseCode == HttpURLConnection.HTTP_OK) {
+//			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+//			StringBuffer response = new StringBuffer();
+//			while ((readLine = in.readLine()) != null) {
+//				response.append(readLine);
+//			}
+//			in.close();
+//			return response.toString();
+//		}
+//		System.out.println("url failed " + urlForGetRequest.toString());
+//		System.out.println(
+//				"GET NOT WORKED - url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions due to "
+//						+ responseCode);
+//		throw new AccessDeniedException("403 returned");
 
 	}
 
