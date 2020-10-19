@@ -401,7 +401,7 @@ public class CanvasRestController {
 		if (token.length() == 0)
 			return;
 
-		// 1. convert Criterion to JSON Object that we planning to export to Canvas
+		// step 1: convert Criterion to JSON Object that we planning to export to Canvas
 		Criterion c = criterionDao.getCriterion(id);
 		JSONObject outcome = new JSONObject();
 		outcome.put("title", c.getName());
@@ -418,51 +418,25 @@ public class CanvasRestController {
 
 		outcome.put("ratings", ratings);
 
-		// 2. use url:POST|/api/v1/courses/:course_id/outcome_groups/:id/outcomes to ADD
-		// OUTCOME to Canvas
+		// step 2: call url:POST|/api/v1/courses/:course_id/outcome_groups/:id/outcomes
+		// to export outcome
 		String canvasURL = readProp("canvas.url") + "api/v1/";
-		try {
-			URL url = new URL(canvasURL + "courses/" + courseId + "/outcome_groups/" + outcome_group_Id + "/outcomes");
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		String api = canvasURL + "courses/" + courseId + "/outcome_groups/" + outcome_group_Id + "/outcomes";
+		String response = canvasPOSTHelper(api, outcome, token);
+		// step 3: convert response body to JSONObject and record the external outcome
+		// ID into DB
+		JSONParser parser = new JSONParser();
+		JSONObject responseJson = (JSONObject) parser.parse(response);
+		JSONObject outcomeJson = (JSONObject) responseJson.get("outcome");
+		String criterion_extid = outcomeJson.get("id").toString();
 
-			conn.setRequestMethod("POST");
-			conn.setRequestProperty("Authorization", "Bearer " + token);
-			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setDoOutput(true);
+		// bind export outcome's ID with criterionid
+		External external = new External(EXTSOURCE, criterion_extid, "criterion");
+		external.setCriterion(c);
+		external = externalDao.saveExternal(external);
+		c.getExternals().add(external);
+		c = criterionDao.saveCriterion(c);
 
-			String jsonInputString = outcome.toString();
-
-			OutputStream os = conn.getOutputStream();
-			os.write(jsonInputString.getBytes());
-			os.flush();
-
-			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-				throw new RuntimeException("Failed to export Outcome: HTTP error code : " + conn.getResponseCode());
-			}
-
-			// 3. get Response Body and record the external outcome ID into DB
-			try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
-				StringBuilder response = new StringBuilder();
-				String responseLine = null;
-				while ((responseLine = br.readLine()) != null) {
-					response.append(responseLine.trim());
-				}
-				// convert response body to JSONObject
-				JSONParser parser = new JSONParser();
-				JSONObject responseJson = (JSONObject) parser.parse(response.toString());
-				JSONObject outcomeJson = (JSONObject) responseJson.get("outcome");
-				String criterion_extid = outcomeJson.get("id").toString();
-
-				// bind export outcome's ID with criterionid
-				External external = new External(EXTSOURCE, criterion_extid, "criterion");
-				external.setCriterion(c);
-				external = externalDao.saveExternal(external);
-				c.getExternals().add(external);
-				c = criterionDao.saveCriterion(c);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 
 	// return outcome groups under certain course
@@ -551,64 +525,34 @@ public class CanvasRestController {
 
 		// 4. use url:POST|/api/v1/courses/:course_id/rubrics to add rubric in Canvas
 		String canvasURL = readProp("canvas.url") + "api/v1/";
-		String rubric_extid = "";
-		try {
-			URL url = new URL(canvasURL + "courses/" + courseId + "/rubrics");
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-			conn.setRequestMethod("POST");
-			conn.setRequestProperty("Authorization", "Bearer " + token);
-			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setDoOutput(true);
-
-			String jsonInputString = object.toString();
-
-			OutputStream os = conn.getOutputStream();
-			os.write(jsonInputString.getBytes());
-			os.flush();
-
-			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-				throw new RuntimeException("Failed to export rubric: HTTP error code : " + conn.getResponseCode());
-			}
-
-			// 5. get Response Body and record the external rubric ID and criteria IDs into
-			// DB
-			try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
-				StringBuilder response = new StringBuilder();
-				String responseLine = null;
-				while ((responseLine = br.readLine()) != null) {
-					response.append(responseLine.trim());
-				}
-				// convert response body to JSONObject
-				JSONParser parser = new JSONParser();
-				JSONObject responseJson = (JSONObject) parser.parse(response.toString());
-				JSONObject rubricJson = (JSONObject) responseJson.get("rubric");
-				rubric_extid = rubricJson.get("id").toString();
-
-				// bind export rubric's ID with rubric on Rubric Service (also criteria under
-				// rubric)
-				External external = new External(EXTSOURCE, rubric_extid, "rubric");
-				external.setRubric(r);
-				external = externalDao.saveExternal(external);
-				r.getExternals().add(external);
-				r = rubricDao.saveRubric(r);
-				List<Criterion> rscriteria = r.getCriteria(); // criteria array under Rubric on RS
-				JSONArray criteriaArray = (JSONArray) rubricJson.get("data");
-				for (int i = 0; i < criteriaArray.size(); i++) {
-					JSONObject criterionJson = (JSONObject) parser.parse(criteriaArray.get(i).toString());
-					String cid = criterionJson.get("id").toString();
-					Criterion rscriterion = rscriteria.get(i); // the criterion under Rubric on Rubric Service
-					External externalc = new External(EXTSOURCE, cid, "criterion");
-					externalc.setCriterion(rscriterion);
-					externalc = externalDao.saveExternal(externalc);
-					rscriterion.getExternals().add(externalc);
-					rscriterion = criterionDao.saveCriterion(rscriterion);
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new AccessDeniedException("403 returned");
+		String api = canvasURL + "courses/" + courseId + "/rubrics";
+		String response = canvasPOSTHelper(api, object, token);
+		// 5. convert response body to JSONObject and record the external rubric ID and
+		// criteria IDs
+		JSONParser parser = new JSONParser();
+		JSONObject responseJson = (JSONObject) parser.parse(response);
+		JSONObject rubricJson = (JSONObject) responseJson.get("rubric");
+		String rubric_extid = rubricJson.get("id").toString();
+		// bind export rubric's ID with rubric on Rubric Service (also criteria under
+		// rubric)
+		External external = new External(EXTSOURCE, rubric_extid, "rubric");
+		external.setRubric(r);
+		external = externalDao.saveExternal(external);
+		r.getExternals().add(external);
+		r = rubricDao.saveRubric(r);
+		List<Criterion> rscriteria = r.getCriteria(); // criteria array under Rubric on RS
+		JSONArray criteriaArray = (JSONArray) rubricJson.get("data");
+		for (int i = 0; i < criteriaArray.size(); i++) {
+			JSONObject criterionJson = (JSONObject) parser.parse(criteriaArray.get(i).toString());
+			String cid = criterionJson.get("id").toString();
+			Criterion rscriterion = rscriteria.get(i); // the criterion under Rubric on Rubric Service
+			External externalc = new External(EXTSOURCE, cid, "criterion");
+			externalc.setCriterion(rscriterion);
+			externalc = externalDao.saveExternal(externalc);
+			rscriterion.getExternals().add(externalc);
+			rscriterion = criterionDao.saveCriterion(rscriterion);
 		}
+
 		// 6. create an assignment if needed
 		String assignmentName = assignmentInfo.getOrDefault("name", "");
 		String ext_assignmentId = assignmentInfo.getOrDefault("id", "");
@@ -646,18 +590,19 @@ public class CanvasRestController {
 	// get ALL group categories in this certain course via given canvasToken
 	// calling url:GET|/api/v1/courses
 	@RequestMapping(value = "/course/{courseId}/group_category/{token}", method = RequestMethod.GET, produces = "application/json")
-	public List<String> getGroupCategories(@PathVariable long courseId,@RequestParam(value = "token", required = true, defaultValue = "") String token)
-			throws IOException {
+	public List<String> getGroupCategories(@PathVariable long courseId,
+			@RequestParam(value = "token", required = true, defaultValue = "") String token) throws IOException {
 
 		if (token.length() == 0)
 			return null;
 
 		List<String> res = new ArrayList<>();
 		String canvasURL = readProp("canvas.url") + "api/v1/";
-		String response = canvasGETHelper(canvasURL + "courses/"+courseId+"/group_categories", token);
+		String response = canvasGETHelper(canvasURL + "courses/" + courseId + "/group_categories", token);
 		res.add(response);
 		return res;
 	}
+
 	private void assignPeerReviews(String canvasURL, long courseId, String groupCategoryId, String assignmentId,
 			String token) {
 		if (groupCategoryId.length() == 0)
@@ -752,8 +697,8 @@ public class CanvasRestController {
 		}
 	}
 
-	//canvas calling helper only for POST //haven't able to get response of POST
-	private void canvasPOSTHelper(String api, JSONObject object, String token) {
+	// canvas calling helper only for POST
+	private String canvasPOSTHelper(String api, JSONObject object, String token) {
 		try {
 			URL url = new URL(api);
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -768,70 +713,46 @@ public class CanvasRestController {
 			OutputStream os = conn.getOutputStream();
 			os.write(jsonInputString.getBytes());
 			os.flush();
-
 			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK
 					&& conn.getResponseCode() != HttpURLConnection.HTTP_CREATED) {
-				throw new RuntimeException("Failed to create peer review: HTTP error code : " + conn.getResponseCode());
+				throw new RuntimeException(
+						"Failed to create " + api + " : HTTP error code : " + conn.getResponseCode());
 			}
-		} catch (Exception e) {
-			System.out.println("failde to do POST " + api + e.getMessage());
-			throw new AccessDeniedException("403 returned");
-		}
-
-	}
-
-	// calling url:POST|/api/v1/courses/:course_id/assignments
-	private String createAssignment(String canvasURL, long courseId, String assignmentName, String token,
-			String groupCategoryId) {
-		try {
-			URL url = new URL(canvasURL + "courses/" + courseId + "/assignments");
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-			conn.setRequestMethod("POST");
-			conn.setRequestProperty("Authorization", "Bearer " + token);
-			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setDoOutput(true);
-
-			JSONObject object = new JSONObject();
-			JSONObject assignment = new JSONObject();
-			assignment.put("name", assignmentName);
-			if (groupCategoryId.length() > 0)
-			{
-				assignment.put("group_category_id", groupCategoryId);
-				assignment.put("peer_reviews", true);
-			}
-			object.put("assignment", assignment);
-			String jsonInputString = object.toString();
-
-			OutputStream os = conn.getOutputStream();
-			os.write(jsonInputString.getBytes());
-			os.flush();
-
-			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK
-					&& conn.getResponseCode() != HttpURLConnection.HTTP_CREATED) {
-				throw new RuntimeException("Failed to create assignment: HTTP error code : " + conn.getResponseCode());
-			}
-
-			// 5. get Response Body and return the external assignment ID
+			// get response body
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
 				StringBuilder response = new StringBuilder();
 				String responseLine = null;
 				while ((responseLine = br.readLine()) != null) {
 					response.append(responseLine.trim());
 				}
-				// convert response body to JSONObject
-				JSONParser parser = new JSONParser();
-				JSONObject responseJson = (JSONObject) parser.parse(response.toString());
-				return responseJson.get("id").toString();
+				return response.toString();
 			} catch (Exception e) {
-				System.out.println("failed to get response when creating assignment: " + e.getMessage());
+				System.out.println("failed to get response of POST " + api + " : " + e.getMessage());
 				throw new AccessDeniedException("403 returned");
 			}
-
 		} catch (Exception e) {
-			System.out.println("failde to do POST|/api/v1/courses/:course_id/assignments: " + e.getMessage());
+			System.out.println("failde to do POST " + api + e.getMessage());
 			throw new AccessDeniedException("403 returned");
 		}
+	}
+
+	// calling url:POST|/api/v1/courses/:course_id/assignments
+	private String createAssignment(String canvasURL, long courseId, String assignmentName, String token,
+			String groupCategoryId) throws ParseException {
+		String api = canvasURL + "courses/" + courseId + "/assignments";
+		JSONObject object = new JSONObject();
+		JSONObject assignment = new JSONObject();
+		assignment.put("name", assignmentName);
+		if (groupCategoryId.length() > 0) {
+			assignment.put("group_category_id", groupCategoryId);
+			assignment.put("peer_reviews", true);
+		}
+		object.put("assignment", assignment);
+		String response = canvasPOSTHelper(api, object, token);
+		// convert response body to JSONObject
+		JSONParser parser = new JSONParser();
+		JSONObject responseJson = (JSONObject) parser.parse(response);
+		return responseJson.get("id").toString();
 	}
 
 	// calling url:PUT|/api/v1/courses/:course_id/assignments/:id
@@ -869,37 +790,15 @@ public class CanvasRestController {
 
 	// calling url:POST|/api/v1/courses/:course_id/rubric_associations
 	private void bindAssignmentAndRubric(String canvasURL, long courseId, String rubricId, String assId, String token) {
-		try {
-			URL url = new URL(canvasURL + "courses/" + courseId + "/rubric_associations");
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-			conn.setRequestMethod("POST");
-			conn.setRequestProperty("Authorization", "Bearer " + token);
-			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setDoOutput(true);
-
-			JSONObject object = new JSONObject();
-			JSONObject association = new JSONObject();
-			association.put("rubric_id", Integer.valueOf(rubricId));
-			association.put("association_id", Integer.valueOf(assId));
-			association.put("association_type", "Assignment");
-			association.put("purpose", "grading");
-			object.put("rubric_association", association);
-			String jsonInputString = object.toString();
-
-			OutputStream os = conn.getOutputStream();
-			os.write(jsonInputString.getBytes());
-			os.flush();
-
-			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-				throw new RuntimeException(
-						"Failed to bind assignment with rubric: HTTP error code : " + conn.getResponseCode());
-			}
-
-		} catch (Exception e) {
-			System.out.println("POST|/api/v1/courses/:course_id/rubric_associations failed: " + e.getMessage());
-			throw new AccessDeniedException("403 returned");
-		}
+		String api = canvasURL + "courses/" + courseId + "/rubric_associations";
+		JSONObject object = new JSONObject();
+		JSONObject association = new JSONObject();
+		association.put("rubric_id", Integer.valueOf(rubricId));
+		association.put("association_id", Integer.valueOf(assId));
+		association.put("association_type", "Assignment");
+		association.put("purpose", "grading");
+		object.put("rubric_association", association);
+		canvasPOSTHelper(api, object, token);
 	}
 
 	// get all assignments from certain course
