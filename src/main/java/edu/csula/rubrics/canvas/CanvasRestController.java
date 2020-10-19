@@ -139,41 +139,25 @@ public class CanvasRestController {
 		String canvasURL = readProp("canvas.url") + "api/v1/";
 		while (pageNum >= 1 && pageNum < 10) // for now I set limitation at most we can have 500 rubrics
 		{
-			URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/rubrics?page=" + pageNum + "&per_page=50");
-			String readLine = null;
-			HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
+			String api = canvasURL + "courses/" + cid + "/rubrics?page=" + pageNum + "&per_page=50";
+			StringBuffer response = new StringBuffer(canvasGETHelper(api, token));
 
-			connection.setRequestProperty("Authorization", "Bearer " + token);
-			connection.setRequestProperty("Content-Type", "application/json");
-			connection.setRequestMethod("GET");
-			int responseCode = connection.getResponseCode();
-			if (responseCode == HttpURLConnection.HTTP_OK) {
-				BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-				StringBuffer response = new StringBuffer();
-				while ((readLine = in.readLine()) != null) {
-					response.append(readLine);
-				}
-				in.close();
-				// empty array -- means no data in this page:
-				if (response.toString().equals("[]")) {
-					sb.deleteCharAt(sb.length() - 1); // remove ,
-					sb.append("]");
-					break;
-				}
-				// if it's not the first page, we shall remove front bracket
-				if (pageNum != 1) {
-					response.deleteCharAt(0); // remove [
-				}
-				// no matter which page we are, we shall remove ] and changed to ,
-				response.deleteCharAt(response.length() - 1);
-				response.append(",");
-
-				sb.append(response.toString());
-				pageNum++;
-			} else {
-				System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics due to " + responseCode);
-				throw new AccessDeniedException("403 returned");
+			// empty array -- means no data in this page:
+			if (response.toString().equals("[]")) {
+				sb.deleteCharAt(sb.length() - 1); // remove ,
+				sb.append("]");
+				break;
 			}
+			// if it's not the first page, we shall remove front bracket
+			if (pageNum != 1) {
+				response.deleteCharAt(0); // remove [
+			}
+			// no matter which page we are, we shall remove ] and changed to ,
+			response.deleteCharAt(response.length() - 1);
+			response.append(",");
+
+			sb.append(response.toString());
+			pageNum++;
 		}
 		res.add(sb.toString());
 		return res;
@@ -185,7 +169,7 @@ public class CanvasRestController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public Long importRubric(@PathVariable long cid, @PathVariable long rid,
 			@RequestParam(value = "token", required = true, defaultValue = "") String token, HttpServletRequest request)
-			throws IOException, ParseException {
+			throws ParseException {
 
 		String sub = getSub(request);
 		if (token.length() == 0 || sub == null || sub.length() == 0)
@@ -198,30 +182,12 @@ public class CanvasRestController {
 			user = userDao.saveUser(user);
 		}
 
+		// get certain rubric
 		String canvasURL = readProp("canvas.url") + "api/v1/";
-		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/rubrics/" + rid);
+		String api = canvasURL + "courses/" + cid + "/rubrics/" + rid;
+		String response = canvasGETHelper(api, token);
 
-		String readLine = null;
-		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-
-		connection.setRequestProperty("Authorization", "Bearer " + token);
-		connection.setRequestProperty("Content-Type", "application/json");
-		connection.setRequestMethod("GET");
-		int responseCode = connection.getResponseCode();
-
-		if (responseCode != HttpURLConnection.HTTP_OK) {
-			System.out.println("GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id} due to " + responseCode);
-			throw new AccessDeniedException("403 returned");
-		}
-
-		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-		StringBuffer response = new StringBuffer();
-		while ((readLine = in.readLine()) != null) {
-			response.append(readLine);
-		}
-		in.close();
-
-		return importRubricHelper(response.toString(), user);
+		return importRubricHelper(response, user);
 
 	}
 
@@ -327,63 +293,44 @@ public class CanvasRestController {
 
 		// get certain canvas outcome
 		String canvasURL = readProp("canvas.url") + "api/v1/";
-		URL urlForGetRequest = new URL(canvasURL + "outcomes/" + id);
-		String readLine = null;
-		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
+		String api = canvasURL + "outcomes/" + id;
+		String response = canvasGETHelper(api, token);
 
-		connection.setRequestProperty("Authorization", "Bearer " + token);
-		connection.setRequestProperty("Content-Type", "application/json");
-		connection.setRequestMethod("GET");
-		int responseCode = connection.getResponseCode();
+		// create criterion
+		JSONParser parser = new JSONParser();
+		JSONObject criterionJson = (JSONObject) parser.parse(response.toString());
+		String criterion_name = criterionJson.get("title").toString();
+		String criterion_desc = criterionJson.get("description").toString();
+		// first check if we import this criterion before:
+		String criterion_extid = criterionJson.get("id").toString();
+		long duplId = externalDao.checkExists(EXTSOURCE, criterion_extid, "criterion"); // id of existed outcome in db
+		if (duplId > -1)
+			return duplId;
 		Criterion criterion = new Criterion();
-		if (responseCode == HttpURLConnection.HTTP_OK) {
-			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			StringBuffer response = new StringBuffer();
-			while ((readLine = in.readLine()) != null) {
-				response.append(readLine);
-			}
-			in.close();
-			// create criterion
-			JSONParser parser = new JSONParser();
-			JSONObject criterionJson = (JSONObject) parser.parse(response.toString());
-			String criterion_name = criterionJson.get("title").toString();
-			String criterion_desc = criterionJson.get("description").toString();
-			// first check if we import this criterion before:
-			String criterion_extid = criterionJson.get("id").toString();
-			long duplId = externalDao.checkExists(EXTSOURCE, criterion_extid, "criterion"); // id of existed outcome in
-																							// RS
-			if (duplId > -1)
-				return duplId;
-			else {
-				criterion.setName(criterion_name);
-				criterion.setDescription(criterion_desc);
-				criterion.setCreator(user);
-				criterion.setReusable(true); // since the outcome we can import from Canvas is definitely reusable
-				criterion = criterionDao.saveCriterion(criterion);
+		criterion.setName(criterion_name);
+		criterion.setDescription(criterion_desc);
+		criterion.setCreator(user);
+		criterion.setPublishDate(Calendar.getInstance());
+		criterion.setReusable(true); // since the outcome we can import from Canvas is definitely reusable
+		criterion = criterionDao.saveCriterion(criterion);
 
-				External external = new External(EXTSOURCE, criterion_extid, "criterion");
-				external.setCriterion(criterion);
-				external = externalDao.saveExternal(external);
-				criterion.getExternals().add(external);
+		External external = new External(EXTSOURCE, criterion_extid, "criterion");
+		external.setCriterion(criterion);
+		external = externalDao.saveExternal(external);
+		criterion.getExternals().add(external);
 
-				// create ratings under criterion
-				JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
-				for (int j = 0; j < ratingsArray.size(); j++) {
-					JSONObject ratingJson = (JSONObject) parser.parse(ratingsArray.get(j).toString());
-					String rating_desc = ratingJson.get("description").toString();
-					double rating_value = Double.parseDouble(ratingJson.get("points").toString());
-					Rating rating = new Rating();
-					rating.setCriterion(criterion);
-					rating.setDescription(rating_desc);
-					rating.setValue(rating_value);
+		// create ratings under criterion
+		JSONArray ratingsArray = (JSONArray) criterionJson.get("ratings");
+		for (int j = 0; j < ratingsArray.size(); j++) {
+			JSONObject ratingJson = (JSONObject) parser.parse(ratingsArray.get(j).toString());
+			String rating_desc = ratingJson.get("description").toString();
+			double rating_value = Double.parseDouble(ratingJson.get("points").toString());
+			Rating rating = new Rating();
+			rating.setCriterion(criterion);
+			rating.setDescription(rating_desc);
+			rating.setValue(rating_value);
 
-					rating = criterionDao.saveRating(rating);
-				}
-			}
-
-		} else {
-			System.out.println("GET NOT WORKED - /api/v1/outcomes/:id due to " + responseCode);
-			throw new AccessDeniedException("403 returned");
+			rating = criterionDao.saveRating(rating);
 		}
 
 		return criterion.getId();
@@ -449,28 +396,10 @@ public class CanvasRestController {
 			return null;
 
 		String canvasURL = readProp("canvas.url") + "api/v1/";
-
+		String api = canvasURL + "courses/" + cid + "/outcome_groups";
+		String response = canvasGETHelper(api, token);
 		List<String> res = new ArrayList<>();
-		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/outcome_groups");
-		String readLine = null;
-		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-
-		connection.setRequestProperty("Authorization", "Bearer " + token);
-		connection.setRequestProperty("Content-Type", "application/json");
-		connection.setRequestMethod("GET");
-		int responseCode = connection.getResponseCode();
-		if (responseCode == HttpURLConnection.HTTP_OK) {
-			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			StringBuffer response = new StringBuffer();
-			while ((readLine = in.readLine()) != null) {
-				response.append(readLine);
-			}
-			res.add(response.toString());
-		} else {
-			System.out.println(
-					"GET NOT WORKED - url:GET|/api/v1/courses/:course_id/outcome_groups due to " + responseCode);
-			throw new AccessDeniedException("403 returned");
-		}
+		res.add(response);
 		return res;
 	}
 
@@ -816,42 +745,25 @@ public class CanvasRestController {
 		String canvasURL = readProp("canvas.url") + "api/v1/";
 		while (pageNum >= 1 && pageNum < 10) // for now I set limitation at most we can have 500 assignments
 		{
-			URL urlForGetRequest = new URL(
-					canvasURL + "courses/" + cid + "/assignments?page=" + pageNum + "&per_page=50");
-			String readLine = null;
-			HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-
-			connection.setRequestProperty("Authorization", "Bearer " + token);
-			connection.setRequestProperty("Content-Type", "application/json");
-			connection.setRequestMethod("GET");
-			int responseCode = connection.getResponseCode();
-			if (responseCode == HttpURLConnection.HTTP_OK) {
-				BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-				StringBuffer response = new StringBuffer();
-				while ((readLine = in.readLine()) != null) {
-					response.append(readLine);
-				}
-				in.close();
-				// empty array -- means no data in this page:
-				if (sb.length() > 0 && response.toString().equals("[]")) {
-					sb.deleteCharAt(sb.length() - 1); // remove ,
-					sb.append("]");
-					break;
-				}
-				// if it's not the first page, we shall remove front bracket
-				if (pageNum != 1) {
-					response.deleteCharAt(0); // remove [
-				}
-				// no matter which page we are, we shall remove ] and changed to ,
-				response.deleteCharAt(response.length() - 1);
-				response.append(",");
-
-				sb.append(response.toString());
-				pageNum++;
-			} else {
-				System.out.println("GET NOT WORKED - /v1/courses/{course_id}/assignments due to " + responseCode);
-				throw new AccessDeniedException("403 returned");
+			String api = canvasURL + "courses/" + cid + "/assignments?page=" + pageNum + "&per_page=50";
+			StringBuffer response = new StringBuffer(canvasGETHelper(api,token));
+			
+			// empty array -- means no data in this page:
+			if (sb.length() > 0 && response.toString().equals("[]")) {
+				sb.deleteCharAt(sb.length() - 1); // remove ,
+				sb.append("]");
+				break;
 			}
+			// if it's not the first page, we shall remove front bracket
+			if (pageNum != 1) {
+				response.deleteCharAt(0); // remove [
+			}
+			// no matter which page we are, we shall remove ] and changed to ,
+			response.deleteCharAt(response.length() - 1);
+			response.append(",");
+
+			sb.append(response.toString());
+			pageNum++;
 		}
 		res.add(sb.toString());
 		return res;
@@ -878,31 +790,10 @@ public class CanvasRestController {
 
 		// 1. call API to get rubric with assessments
 		String canvasURL = readProp("canvas.url") + "api/v1/";
-
-		URL urlForGetRequest = new URL(
-				canvasURL + "courses/" + cid + "/rubrics/" + rid + "?include[]=assessments&style=full");
-		String readLine = null;
-		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-		connection.setRequestProperty("Authorization", "Bearer " + token);
-		connection.setRequestProperty("Content-Type", "application/json");
-		connection.setRequestMethod("GET");
-		int responseCode = connection.getResponseCode();
-
-		if (responseCode != HttpURLConnection.HTTP_OK) {
-			System.out.println(
-					"GET NOT WORKED - /v1/courses/{course_id}/rubrics/{id}?include[]=assessments&style=full due to "
-							+ responseCode);
-			throw new AccessDeniedException("403 returned");
-		}
-
-		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-		StringBuffer response = new StringBuffer();
-		while ((readLine = in.readLine()) != null) {
-			response.append(readLine);
-		}
-		in.close();
+		String api = canvasURL + "courses/" + cid + "/rubrics/" + rid + "?include[]=assessments&style=full";
+		String response = canvasGETHelper(api, token);
 		// 2. import Rubric and Criterion, Ratings under it if needed
-		Rubric rubric = rubricDao.getRubric(importRubricHelper(response.toString(), user));
+		Rubric rubric = rubricDao.getRubric(importRubricHelper(response, user));
 		// 3. create AssessmentGroup
 		AssessmentGroup assessmentGroup = new AssessmentGroup();
 		assessmentGroup.setRubric(rubric);
@@ -1037,29 +928,6 @@ public class CanvasRestController {
 	public String getSubmissions(String canvasURL, long cid, String assignmentId, String token) throws IOException {
 		String api = canvasURL + "courses/" + cid + "/assignments/" + assignmentId + "/submissions";
 		return canvasGETHelper(api, token);
-//		URL urlForGetRequest = new URL(canvasURL + "courses/" + cid + "/assignments/" + assignmentId + "/submissions");
-//		String readLine = null;
-//		HttpURLConnection connection = (HttpURLConnection) urlForGetRequest.openConnection();
-//
-//		connection.setRequestProperty("Authorization", "Bearer " + token);
-//		connection.setRequestProperty("Content-Type", "application/json");
-//		connection.setRequestMethod("GET");
-//		int responseCode = connection.getResponseCode();
-//		if (responseCode == HttpURLConnection.HTTP_OK) {
-//			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-//			StringBuffer response = new StringBuffer();
-//			while ((readLine = in.readLine()) != null) {
-//				response.append(readLine);
-//			}
-//			in.close();
-//			return response.toString();
-//		}
-//		System.out.println("url failed " + urlForGetRequest.toString());
-//		System.out.println(
-//				"GET NOT WORKED - url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions due to "
-//						+ responseCode);
-//		throw new AccessDeniedException("403 returned");
-
 	}
 
 	// using the given url to download the file
