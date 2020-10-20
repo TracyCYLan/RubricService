@@ -108,7 +108,76 @@ public class CanvasRestController {
 		JSONObject claimsObj = (JSONObject) parser.parse(payload);
 		return claimsObj.get("sub").toString();
 	}
+	
+	// canvas calling helper only for GET
+	private String canvasGETHelper(String api, String token) {
+		try {
+			URL url = new URL(api);
+			String readLine = null;
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
+			connection.setRequestProperty("Authorization", "Bearer " + token);
+			connection.setRequestProperty("Content-Type", "application/json");
+			connection.setRequestMethod("GET");
+			int responseCode = connection.getResponseCode();
+			if (responseCode == HttpURLConnection.HTTP_OK) {
+				BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+				StringBuffer response = new StringBuffer();
+				while ((readLine = in.readLine()) != null) {
+					response.append(readLine);
+				}
+				in.close();
+				return response.toString();
+			} else {
+				System.out.println("GET NOT WORKED - " + api + " due to " + responseCode);
+				throw new AccessDeniedException("403 returned");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new AccessDeniedException("403 returned");
+		}
+	}
+
+	// canvas calling helper only for POST
+	private String canvasPOSTHelper(String api, JSONObject object, String token) {
+		try {
+			URL url = new URL(api);
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+			conn.setRequestMethod("POST");
+			conn.setRequestProperty("Authorization", "Bearer " + token);
+			conn.setRequestProperty("Content-Type", "application/json");
+			conn.setDoOutput(true);
+
+			String jsonInputString = object.toString();
+
+			OutputStream os = conn.getOutputStream();
+			os.write(jsonInputString.getBytes());
+			os.flush();
+			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK
+					&& conn.getResponseCode() != HttpURLConnection.HTTP_CREATED) {
+				throw new RuntimeException(
+						"Failed to create " + api + " : HTTP error code : " + conn.getResponseCode());
+			}
+			// get response body
+			try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
+				StringBuilder response = new StringBuilder();
+				String responseLine = null;
+				while ((responseLine = br.readLine()) != null) {
+					response.append(responseLine.trim());
+				}
+				return response.toString();
+			} catch (Exception e) {
+				System.out.println("failed to get response of POST " + api + " : " + e.getMessage());
+				throw new AccessDeniedException("403 returned");
+			}
+		} catch (Exception e) {
+			System.out.println("failde to do POST " + api + e.getMessage());
+			throw new AccessDeniedException("403 returned");
+		}
+	}
+
+	
 	// get ALL courses via given canvasToken
 	// calling url:GET|/api/v1/courses
 	@RequestMapping(value = "/course/{token}", method = RequestMethod.GET, produces = "application/json")
@@ -597,73 +666,6 @@ public class CanvasRestController {
 		canvasPOSTHelper(api, object, token);
 	}
 
-	// canvas calling helper only for GET
-	private String canvasGETHelper(String api, String token) {
-		try {
-			URL url = new URL(api);
-			String readLine = null;
-			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-			connection.setRequestProperty("Authorization", "Bearer " + token);
-			connection.setRequestProperty("Content-Type", "application/json");
-			connection.setRequestMethod("GET");
-			int responseCode = connection.getResponseCode();
-			if (responseCode == HttpURLConnection.HTTP_OK) {
-				BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-				StringBuffer response = new StringBuffer();
-				while ((readLine = in.readLine()) != null) {
-					response.append(readLine);
-				}
-				in.close();
-				return response.toString();
-			} else {
-				System.out.println("GET NOT WORKED - " + api + " due to " + responseCode);
-				throw new AccessDeniedException("403 returned");
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new AccessDeniedException("403 returned");
-		}
-	}
-
-	// canvas calling helper only for POST
-	private String canvasPOSTHelper(String api, JSONObject object, String token) {
-		try {
-			URL url = new URL(api);
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-			conn.setRequestMethod("POST");
-			conn.setRequestProperty("Authorization", "Bearer " + token);
-			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setDoOutput(true);
-
-			String jsonInputString = object.toString();
-
-			OutputStream os = conn.getOutputStream();
-			os.write(jsonInputString.getBytes());
-			os.flush();
-			if (conn.getResponseCode() != HttpURLConnection.HTTP_OK
-					&& conn.getResponseCode() != HttpURLConnection.HTTP_CREATED) {
-				throw new RuntimeException(
-						"Failed to create " + api + " : HTTP error code : " + conn.getResponseCode());
-			}
-			// get response body
-			try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
-				StringBuilder response = new StringBuilder();
-				String responseLine = null;
-				while ((responseLine = br.readLine()) != null) {
-					response.append(responseLine.trim());
-				}
-				return response.toString();
-			} catch (Exception e) {
-				System.out.println("failed to get response of POST " + api + " : " + e.getMessage());
-				throw new AccessDeniedException("403 returned");
-			}
-		} catch (Exception e) {
-			System.out.println("failde to do POST " + api + e.getMessage());
-			throw new AccessDeniedException("403 returned");
-		}
-	}
 
 	// calling url:POST|/api/v1/courses/:course_id/assignments
 	private String createAssignment(String canvasURL, long courseId, String assignmentName, String token,
