@@ -108,7 +108,7 @@ public class CanvasRestController {
 		JSONObject claimsObj = (JSONObject) parser.parse(payload);
 		return claimsObj.get("sub").toString();
 	}
-	
+
 	// canvas calling helper only for GET
 	private String canvasGETHelper(String api, String token) {
 		try {
@@ -177,7 +177,6 @@ public class CanvasRestController {
 		}
 	}
 
-	
 	// get ALL courses via given canvasToken
 	// calling url:GET|/api/v1/courses
 	@RequestMapping(value = "/course/{token}", method = RequestMethod.GET, produces = "application/json")
@@ -609,18 +608,17 @@ public class CanvasRestController {
 		JSONParser parser = new JSONParser();
 		// 1. store users and its corresponding submissionId
 		Map<String, String> userMap = new HashMap<>();// userId - submissionId
+		String api = canvasURL + "courses/" + courseId + "/assignments/" + assignmentId + "/submissions";
+		String submission_response = canvasGETHelper(api, token);
 		try {
-			String submission_response = getSubmissions(canvasURL, courseId, assignmentId, token);
 			JSONArray submissionArr = (JSONArray) parser.parse(submission_response);
 			for (int i = 0; i < submissionArr.size(); i++) {
 				JSONObject obj = (JSONObject) parser.parse(submissionArr.get(i).toString());
 				userMap.put(obj.get("user_id").toString(), obj.get("id").toString());
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new AccessDeniedException("403 returned");
 		} catch (ParseException e) {
 			e.printStackTrace();
+			throw new AccessDeniedException("403 returned");
 		}
 
 		// 2. get all group id of this group category
@@ -665,7 +663,6 @@ public class CanvasRestController {
 		object.put("user_id", userId);
 		canvasPOSTHelper(api, object, token);
 	}
-
 
 	// calling url:POST|/api/v1/courses/:course_id/assignments
 	private String createAssignment(String canvasURL, long courseId, String assignmentName, String token,
@@ -748,8 +745,8 @@ public class CanvasRestController {
 		while (pageNum >= 1 && pageNum < 10) // for now I set limitation at most we can have 500 assignments
 		{
 			String api = canvasURL + "courses/" + cid + "/assignments?page=" + pageNum + "&per_page=50";
-			StringBuffer response = new StringBuffer(canvasGETHelper(api,token));
-			
+			StringBuffer response = new StringBuffer(canvasGETHelper(api, token));
+
 			// empty array -- means no data in this page:
 			if (sb.length() > 0 && response.toString().equals("[]")) {
 				sb.deleteCharAt(sb.length() - 1); // remove ,
@@ -884,7 +881,8 @@ public class CanvasRestController {
 				String artifact_id = assessmentJson.get("artifact_id").toString();
 
 				// call get Submissions of this assignment
-				String sub_response = getSubmissions(canvasURL, cid, assignmentId, token);
+				api = canvasURL + "courses/" + cid + "/assignments/" + assignmentId + "/submissions";
+				String sub_response = canvasGETHelper(api, token);
 				// find submission which has id == artifact_id
 				if (sub_response.length() > 0) {
 					JSONArray submissions = (JSONArray) parser.parse(sub_response);
@@ -924,12 +922,6 @@ public class CanvasRestController {
 			// add assessment into assessmentGroup
 			assessmentGroup.getAssessments().add(assessment);
 		}
-	}
-
-	// get submissions
-	public String getSubmissions(String canvasURL, long cid, String assignmentId, String token) throws IOException {
-		String api = canvasURL + "courses/" + cid + "/assignments/" + assignmentId + "/submissions";
-		return canvasGETHelper(api, token);
 	}
 
 	// using the given url to download the file
