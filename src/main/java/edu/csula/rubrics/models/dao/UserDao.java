@@ -5,25 +5,27 @@ import java.util.List;
 import edu.csula.rubrics.models.User;
 
 public interface UserDao {
-    
-	User getUser( Long id );
+
+	User getUser(Long id);
 
 	List<User> getAllUsers();
-	
-    User getUserByCin( String cin );
 
-    User getUserByUsername( String username );
+	User getUserByCin(String cin);
 
-    List<User> getUsers( Long ids[] );
+	User getUserByUsername(String username);
 
-    List<User> getUsers( String lastName, String firstName );
+	User getUserBySub(String sub);
 
-    List<User> searchUsers( String text );
+	List<User> getUsers(Long ids[]);
 
-    List<User> searchUsersByPrefix( String text, int maxResults );
+	List<User> getUsers(String lastName, String firstName);
 
-    List<User> searchUsersByStanding( String dept, String sybmol );
+	List<User> searchUsers(String text);
 
-    User saveUser( User user );
+	List<User> searchUsersByPrefix(String text, int maxResults);
+
+	List<User> searchUsersByStanding(String dept, String sybmol);
+
+	User saveUser(User user);
 
 }

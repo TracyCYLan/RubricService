@@ -16,9 +16,12 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "criteria")
@@ -36,13 +39,12 @@ public class Criterion implements Serializable {
 	@Column(nullable = false)
 	private String description;
 	
-    //e.g., Canvas
-    @Column(name = "external_source")
-    private String externalSource; 
-    
-    //outcome id in the externalSource
-    @Column(name = "external_id")
-    private String externalId;
+    //One Outcome has multiple external Ids and its corresponding source
+    //For each externalSourceId, we store external source name AND object ID in the external source
+    //e.g., Canvas1001
+    @JsonIgnore
+    @OneToMany(mappedBy = "criterion")
+    private List<External> externals;
 
 	private boolean deleted;
 
@@ -59,10 +61,15 @@ public class Criterion implements Serializable {
 	
 	@Column(name = "publish_date")
 	private Calendar publishDate;
-
+	
+    @ManyToOne
+    @JoinColumn(name = "creator_id")
+    private User creator;
+    
 	public Criterion() {
 		ratings = new ArrayList<Rating>();
 		tags = new ArrayList<Tag>();
+		externals = new ArrayList<External>();
 	}
 
 	public Criterion clone() {
@@ -102,20 +109,12 @@ public class Criterion implements Serializable {
 		this.description = description;
 	}
 
-	public String getExternalSource() {
-		return externalSource;
+	public List<External> getExternals() {
+		return externals;
 	}
 
-	public void setExternalSource(String externalSource) {
-		this.externalSource = externalSource;
-	}
-
-	public String getExternalId() {
-		return externalId;
-	}
-
-	public void setExternalId(String externalId) {
-		this.externalId = externalId;
+	public void setExternals(List<External> externals) {
+		this.externals = externals;
 	}
 
 	public boolean isDeleted() {
@@ -156,6 +155,14 @@ public class Criterion implements Serializable {
 
 	public void setPublishDate(Calendar publishDate) {
 		this.publishDate = publishDate;
+	}
+
+	public User getCreator() {
+		return creator;
+	}
+
+	public void setCreator(User creator) {
+		this.creator = creator;
 	}
 
 }

@@ -1,5 +1,6 @@
 package edu.csula.rubrics.web;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -8,8 +9,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.codec.binary.Base64;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,8 +37,10 @@ import edu.csula.rubrics.models.Criterion;
 import edu.csula.rubrics.models.Rating;
 import edu.csula.rubrics.models.Rubric;
 import edu.csula.rubrics.models.Tag;
+import edu.csula.rubrics.models.User;
 import edu.csula.rubrics.models.dao.CriterionDao;
 import edu.csula.rubrics.models.dao.RubricDao;
+import edu.csula.rubrics.models.dao.UserDao;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -42,6 +52,23 @@ public class RubricController {
 
 	@Autowired
 	CriterionDao criterionDao;
+
+	@Autowired
+	UserDao userDao;
+
+	// get sub from access_token
+	private String getSub(HttpServletRequest request) throws ParseException {
+		if (request.getHeader("Authorization") == null || request.getHeader("Authorization").length() == 0)
+			return "";
+		String token = request.getHeader("Authorization").split(" ")[1]; // get jwt from header
+		String encodedPayload = token.split("\\.")[1]; // get second encoded part in jwt
+		Base64 base64Url = new Base64(true);
+		String payload = new String(base64Url.decode(encodedPayload));
+
+		JSONParser parser = new JSONParser();
+		JSONObject claimsObj = (JSONObject) parser.parse(payload);
+		return claimsObj.get("sub").toString();
+	}
 
 	// get ALL rubrics
 	@GetMapping
@@ -66,7 +93,17 @@ public class RubricController {
 	 */
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public Long addRubric(@RequestBody Rubric rubric) {
+	public Long addRubric(@RequestBody Rubric rubric, HttpServletRequest request) throws IOException, ParseException {
+		String sub = getSub(request);
+		if (sub == null || sub.length() == 0)
+			throw new AccessDeniedException("403 returned");
+		User user = userDao.getUserBySub(sub);
+		if (user == null) {
+			user = new User();
+			user.setSub(sub);
+			user = userDao.saveUser(user);
+		}
+		rubric.setCreator(user);
 		rubric = rubricDao.saveRubric(rubric);
 		return rubric.getId();
 	}
@@ -76,42 +113,63 @@ public class RubricController {
 	 * {"id":2} => existing criterion_id
 	 */
 	@PostMapping("/{rid}/criterion/{cid}")
-	public void addCriterionOfRubric(@PathVariable long rid, @PathVariable long cid) {
+	public void addCriterionOfRubric(@PathVariable long rid, @PathVariable long cid, HttpServletRequest request) throws ParseException {
 		Rubric rubric = rubricDao.getRubric(rid);
 		if (rubric == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
+		String sub = getSub(request);
+		if (sub == null || sub.length() == 0 || (rubric.getCreator()!=null && !sub.equals(rubric.getCreator().getSub())))
+			throw new AccessDeniedException("403 returned");
 		List<Criterion> criteria = rubric.getCriteria();
 		criteria.add(criterionDao.getCriterion(cid));
 		rubric.setLastUpdatedDate(new Date());
 		rubricDao.saveRubric(rubric);
 	}
+
 	@DeleteMapping("/{rid}/criterion/{cid}")
-	public void removeCriterionOfRubric(@PathVariable long rid, @PathVariable long cid) {
+	public void removeCriterionOfRubric(@PathVariable long rid, @PathVariable long cid, HttpServletRequest request) throws ParseException {
 		Rubric rubric = rubricDao.getRubric(rid);
 		if (rubric == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
-		List<Criterion> criteria = rubric.getCriteria();
+		String sub = getSub(request);
+		if (sub == null || sub.length() == 0 || (rubric.getCreator()!=null && !sub.equals(rubric.getCreator().getSub())))
+			throw new AccessDeniedException("403 returned");
 		
+		List<Criterion> criteria = rubric.getCriteria();
+
 		criteria.remove(criterionDao.getCriterion(cid));
 		rubric.setLastUpdatedDate(new Date());
 		rubricDao.saveRubric(rubric);
 	}
-	//changeOrderOfCriterionInRubric
+
+	// changeOrderOfCriterionInRubric
 	@PatchMapping("/{rid}/criteria/{order1}/{order2}")
-	public void changeCriteriaOrderInRubric(@PathVariable long rid,@PathVariable int order1,@PathVariable int order2) {
+	public void changeCriteriaOrderInRubric(@PathVariable long rid, @PathVariable int order1,
+			@PathVariable int order2, HttpServletRequest request) throws ParseException {
 		Rubric rubric = rubricDao.getRubric(rid);
 		if (rubric == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
+		
+		String sub = getSub(request);
+		if (sub == null || sub.length() == 0 || (rubric.getCreator()!=null && !sub.equals(rubric.getCreator().getSub())))
+			throw new AccessDeniedException("403 returned");
+		
 		List<Criterion> criteria = rubric.getCriteria();
 		Collections.swap(criteria, order1, order2);
 		rubricDao.saveRubric(rubric);
 	}
+
 	// send an array of criteria id and add them to rubric
 	@PostMapping("/{rid}/criteria")
-	public void addCriteriaUnderRubric(@PathVariable long rid, @RequestBody long[] cids) {
+	public void addCriteriaUnderRubric(@PathVariable long rid, @RequestBody long[] cids, HttpServletRequest request) throws ParseException {
 		Rubric rubric = rubricDao.getRubric(rid);
 		if (rubric == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such rubric");
+		
+		String sub = getSub(request);
+		if (sub == null || sub.length() == 0 || (rubric.getCreator()!=null && !sub.equals(rubric.getCreator().getSub())))
+			throw new AccessDeniedException("403 returned");
+		
 		List<Criterion> criteria = rubric.getCriteria();
 		for (long cid : cids)
 			criteria.add(criterionDao.getCriterion(cid));
@@ -124,7 +182,18 @@ public class RubricController {
 	 */
 	@PostMapping("/criterion")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Long addCriterion(@RequestBody Criterion criterion) {
+	public Long addCriterion(@RequestBody Criterion criterion, HttpServletRequest request) throws ParseException {
+		String sub = getSub(request);
+		if (sub == null || sub.length() == 0)
+			throw new AccessDeniedException("403 returned");
+		User user = userDao.getUserBySub(sub);
+		if (user == null) {
+			user = new User();
+			user.setSub(sub);
+			user = userDao.saveUser(user);
+		}
+		criterion.setCreator(user);
+		
 		List<Rating> ratings = criterion.getRatings();
 		List<Tag> tags = criterion.getTags();
 		criterion.setTags(new ArrayList<Tag>());// empty the tag first since we want to create it manually
@@ -210,8 +279,13 @@ public class RubricController {
 
 	// edit properties of rubric
 	@PatchMapping("/{id}")
-	public void editRubric(@PathVariable Long id, @RequestBody Map<String, Object> update) {
+	public void editRubric(@PathVariable Long id, @RequestBody Map<String, Object> update, HttpServletRequest request)
+			throws ParseException {
 		Rubric rubric = rubricDao.getRubric(id);
+		if (rubric.getCreator() != null && !getSub(request).equals(rubric.getCreator().getSub())) 
+		{
+			throw new AccessDeniedException("403 returned"); 
+		}
 		for (String key : update.keySet()) {
 			switch (key) {
 			case "name":
@@ -224,12 +298,9 @@ public class RubricController {
 				try {
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 					String dateInString = (String) update.get(key);
-					if(dateInString==null)
-					{
+					if (dateInString == null) {
 						rubric.setPublishDate(null);
-					}
-					else
-					{
+					} else {
 						Date date = sdf.parse(dateInString);
 						Calendar calendar = Calendar.getInstance();
 						calendar.setTime(date);
@@ -246,24 +317,39 @@ public class RubricController {
 		rubric.setLastUpdatedDate(new Date());
 		rubricDao.saveRubric(rubric);
 	}
-	//publish rubric
+
+	// publish rubric
 	@PutMapping("/publish/{id}")
-	public void publishRubric(@PathVariable Long id) {
+	public void publishRubric(@PathVariable Long id, HttpServletRequest request) throws ParseException {
 		Rubric rubric = rubricDao.getRubric(id);
+		if (rubric.getCreator() != null && !getSub(request).equals(rubric.getCreator().getSub())) 
+		{
+			throw new AccessDeniedException("403 returned"); 
+		}
 		rubric.setPublishDate(Calendar.getInstance());
 		rubricDao.saveRubric(rubric);
 	}
-	//publish criterion
+
+	// publish criterion
 	@PutMapping("/criterion/publish/{id}")
-	public void publishCriterion(@PathVariable Long id) {
+	public void publishCriterion(@PathVariable Long id, HttpServletRequest request) throws ParseException {
 		Criterion criterion = criterionDao.getCriterion(id);
+		if (criterion.getCreator() != null && !getSub(request).equals(criterion.getCreator().getSub())) 
+		{
+			throw new AccessDeniedException("403 returned"); 
+		}
 		criterion.setPublishDate(Calendar.getInstance());
 		criterionDao.saveCriterion(criterion);
 	}
+
 	// edit properties of criteria.
 	@PatchMapping("/criterion/{id}")
-	public void editCriterion(@PathVariable Long id, @RequestBody Criterion updatedCriterion) {
+	public void editCriterion(@PathVariable Long id, @RequestBody Criterion updatedCriterion, HttpServletRequest request) throws ParseException {
 		Criterion criterion = criterionDao.getCriterion(id);
+		if (criterion.getCreator() != null && !getSub(request).equals(criterion.getCreator().getSub())) 
+		{
+			throw new AccessDeniedException("403 returned"); 
+		}
 		// empty ratings and tags
 		List<Rating> ratings = criterion.getRatings();
 		while (ratings.size() > 0) {
@@ -290,22 +376,30 @@ public class RubricController {
 		for (Tag tag : updatedCriterion.getTags())
 			newTags.add(createTag(tag));
 		criterion.setTags(newTags);
-	
+
 		criterionDao.saveCriterion(criterion);
 	}
 
 	// delete this rubric
 	@DeleteMapping("/delete/{id}")
-	public void deleteRubric(@PathVariable Long id) {
+	public void deleteRubric(@PathVariable Long id, HttpServletRequest request) throws ParseException {
 		Rubric rubric = rubricDao.getRubric(id);
+		if (rubric.getCreator() != null && !getSub(request).equals(rubric.getCreator().getSub())) 
+		{
+			throw new AccessDeniedException("403 returned"); 
+		}
 		rubric.setDeleted(true);
 		rubricDao.saveRubric(rubric);
 	}
 
 	// delete this criterion
 	@DeleteMapping("/criterion/delete/{id}")
-	public void deleteCriterion(@PathVariable Long id) {
+	public void deleteCriterion(@PathVariable Long id, HttpServletRequest request) throws ParseException {
 		Criterion criterion = criterionDao.getCriterion(id);
+		if (criterion.getCreator() != null && !getSub(request).equals(criterion.getCreator().getSub())) 
+		{
+			throw new AccessDeniedException("403 returned"); 
+		}
 		criterion.setDeleted(true);
 		criterionDao.saveCriterion(criterion);
 	}

@@ -12,6 +12,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -31,11 +32,9 @@ public class Assessment implements Serializable {
     @JoinColumn(name = "assesor_id")
     private User assessor;
     
-    //which artifact this assessment assesses
-    @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "artifact_id")
-    private Artifact artifact;
+    //one assessment might have more than one file submitted.
+    @OneToMany(mappedBy = "assessment")
+    private List<Artifact> artifacts;
     
     //the assessment is under this association
     @ManyToOne
@@ -47,25 +46,37 @@ public class Assessment implements Serializable {
     @JoinColumn(name = "task_id")
     private Task task;
     
-    @ManyToMany
-    @JoinTable(name = "assessment_ratings",
-    joinColumns = @JoinColumn(name = "assessment_id"),
-    inverseJoinColumns = @JoinColumn(name = "rating_id"))
-    private List<Rating> ratings;
-
-    private String comments;
+    //which rubric we are using to assess this assessment.
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "rubric_id")
+    private Rubric rubric;
+    
+    //one assessment belongs to one group
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "assessment_group_id")
+    private AssessmentGroup assessmentGroup;
+    
+//    @ManyToMany
+//    @JoinTable(name = "assessment_ratings",
+//    joinColumns = @JoinColumn(name = "assessment_id"),
+//    inverseJoinColumns = @JoinColumn(name = "rating_id"))
+//    private List<Rating> ratings;
+    
+    @OneToMany(mappedBy = "assessment")
+    private List<Comment> comments;
+    
+    //assessment_type, e.g., peer_review, grading
+    private String type;
 
     private Date date;
 
-    private boolean completed;
-
     private boolean deleted;
     
-
     public Assessment()
     {
-        ratings = new ArrayList<Rating>();
-        completed = false;
+//        ratings = new ArrayList<Rating>();
         deleted = false;
     }
 
@@ -75,27 +86,17 @@ public class Assessment implements Serializable {
         this.assessor = assessor;
     }
 
-    public Double getOverallRating()
-    {
-        if( !completed ) return null;
-
-        Double overallRating = 0.0;
-        for( Rating rating : ratings )
-            overallRating += rating.getValue();
-        overallRating /= ratings.size();
-
-        return overallRating;
-    }
-
-    public void setCompleted()
-    {
-        if( completed ) return;
-        for( Rating rating : ratings )
-            if( rating.getValue()<0 ) return;
-
-        completed = true;
-
-    }
+//    public Double getOverallRating()
+//    {
+//        if( !completed ) return null;
+//
+//        Double overallRating = 0.0;
+//        for( Rating rating : ratings )
+//            overallRating += rating.getValue();
+//        overallRating /= ratings.size();
+//
+//        return overallRating;
+//    }
 
 	public Long getId() {
 		return id;
@@ -113,16 +114,16 @@ public class Assessment implements Serializable {
 		this.assessor = assessor;
 	}
 
-	public Artifact getArtifact() {
-		return artifact;
-	}
-
-	public void setArtifact(Artifact artifact) {
-		this.artifact = artifact;
-	}
-
 	public Association getAssociation() {
 		return association;
+	}
+
+	public List<Artifact> getArtifacts() {
+		return artifacts;
+	}
+
+	public void setArtifacts(List<Artifact> artifacts) {
+		this.artifacts = artifacts;
 	}
 
 	public void setAssociation(Association association) {
@@ -137,19 +138,19 @@ public class Assessment implements Serializable {
 		this.task = task;
 	}
 
-	public List<Rating> getRatings() {
-		return ratings;
-	}
+//	public List<Rating> getRatings() {
+//		return ratings;
+//	}
+//
+//	public void setRatings(List<Rating> ratings) {
+//		this.ratings = ratings;
+//	}
 
-	public void setRatings(List<Rating> ratings) {
-		this.ratings = ratings;
-	}
-
-	public String getComments() {
+	public List<Comment> getComments() {
 		return comments;
 	}
 
-	public void setComments(String comments) {
+	public void setComments(List<Comment> comments) {
 		this.comments = comments;
 	}
 
@@ -161,14 +162,6 @@ public class Assessment implements Serializable {
 		this.date = date;
 	}
 
-	public boolean isCompleted() {
-		return completed;
-	}
-
-	public void setCompleted(boolean completed) {
-		this.completed = completed;
-	}
-
 	public boolean isDeleted() {
 		return deleted;
 	}
@@ -177,4 +170,27 @@ public class Assessment implements Serializable {
 		this.deleted = deleted;
 	}
 
+	public Rubric getRubric() {
+		return rubric;
+	}
+
+	public void setRubric(Rubric rubric) {
+		this.rubric = rubric;
+	}
+
+	public AssessmentGroup getAssessmentGroup() {
+		return assessmentGroup;
+	}
+
+	public void setAssessmentGroup(AssessmentGroup assessmentGroup) {
+		this.assessmentGroup = assessmentGroup;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
 }

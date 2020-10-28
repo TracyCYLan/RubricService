@@ -18,21 +18,19 @@ public class User implements Serializable {
 	@GeneratedValue
 	private Long id;
 	
-//	@JsonIgnore
-    @Column(nullable = false, unique = true)
-    private String cin;
-	
 	@Column(nullable = false, unique = true)
+	private String sub; //id of oidc-server
+	
+	@Column
     private String username;
 
-//    @JsonIgnore
-    @Column(nullable = false)
-    private String password;
-
-    @Column(name = "last_name", nullable = false)
+	@Column
+	private String email;
+	
+    @Column(name = "last_name")
     private String lastName;
     
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name")
     private String firstName;
 
     @JsonIgnore
@@ -47,12 +45,12 @@ public class User implements Serializable {
 		this.id = id;
 	}
 
-	public String getCin() {
-		return cin;
+	public String getSub() {
+		return sub;
 	}
 
-	public void setCin(String cin) {
-		this.cin = cin;
+	public void setSub(String sub) {
+		this.sub = sub;
 	}
 
 	public String getUsername() {
@@ -63,12 +61,12 @@ public class User implements Serializable {
 		this.username = username;
 	}
 
-	public String getPassword() {
-		return password;
+	public String getEmail() {
+		return email;
 	}
 
-	public void setPassword(String password) {
-		this.password = password;
+	public void setEmail(String email) {
+		this.email = email;
 	}
 
 	public String getLastName() {
