@@ -36,16 +36,6 @@ public class Assessment implements Serializable {
     @OneToMany(mappedBy = "assessment")
     private List<Artifact> artifacts;
     
-    //the assessment is under this association
-    @ManyToOne
-    @JoinColumn(name = "association_id")
-    private Association association;
-    
-    @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "task_id")
-    private Task task;
-    
     //which rubric we are using to assess this assessment.
     @JsonIgnore
     @ManyToOne
@@ -86,18 +76,6 @@ public class Assessment implements Serializable {
         this.assessor = assessor;
     }
 
-//    public Double getOverallRating()
-//    {
-//        if( !completed ) return null;
-//
-//        Double overallRating = 0.0;
-//        for( Rating rating : ratings )
-//            overallRating += rating.getValue();
-//        overallRating /= ratings.size();
-//
-//        return overallRating;
-//    }
-
 	public Long getId() {
 		return id;
 	}
@@ -114,10 +92,6 @@ public class Assessment implements Serializable {
 		this.assessor = assessor;
 	}
 
-	public Association getAssociation() {
-		return association;
-	}
-
 	public List<Artifact> getArtifacts() {
 		return artifacts;
 	}
@@ -125,26 +99,6 @@ public class Assessment implements Serializable {
 	public void setArtifacts(List<Artifact> artifacts) {
 		this.artifacts = artifacts;
 	}
-
-	public void setAssociation(Association association) {
-		this.association = association;
-	}
-
-	public Task getTask() {
-		return task;
-	}
-
-	public void setTask(Task task) {
-		this.task = task;
-	}
-
-//	public List<Rating> getRatings() {
-//		return ratings;
-//	}
-//
-//	public void setRatings(List<Rating> ratings) {
-//		this.ratings = ratings;
-//	}
 
 	public List<Comment> getComments() {
 		return comments;

@@ -36,12 +36,6 @@ public class Artifact implements Serializable {
 	
 	@Column(name = "content_type", nullable = false)
 	private String contentType;
-
-	//this artifact should be under some certain association
-    @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "association_id")
-	private Association association;
 	
     @JsonIgnore
     @ManyToOne
@@ -86,14 +80,6 @@ public class Artifact implements Serializable {
 
 	public void setType(String type) {
 		this.type = type;
-	}
-
-	public Association getAssociation() {
-		return association;
-	}
-
-	public void setAssociation(Association association) {
-		this.association = association;
 	}
 
 	public Assessment getAssessment() {
