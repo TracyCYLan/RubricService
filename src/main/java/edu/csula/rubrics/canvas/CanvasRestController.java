@@ -834,17 +834,25 @@ public class CanvasRestController {
 
 		JSONArray assessmentsArray = (JSONArray) rubricJson.get("assessments");
 
+		//5. call get Submissions of this assignment 
+		api = canvasURL + "courses/" + cid + "/assignments/" + assignmentId + "/submissions";
+		String submissions_response = canvasGETHelper(api, token);
+		JSONArray submissions = null;
+		if (submissions_response.length() > 0) 
+			submissions = (JSONArray) parser.parse(submissions_response);
+		
+		//6. traverse all the assessments in the array and find the assessments under this assignment!
 		for (int i = 0; i < assessmentsArray.size(); i++) {
 			JSONObject assessmentJson = (JSONObject) parser.parse(assessmentsArray.get(i).toString());
 			JSONObject associationJson = (JSONObject) parser.parse(assessmentJson.get("rubric_association").toString());
 			String association_id = associationJson.get("association_id").toString();
 			String association_type = associationJson.get("association_type").toString();
 
-			// ignore assessments that doesn't have the same required assignment id
+			//6.1 ignore assessments that doesn't have the same required assignment id
 			if (!association_type.equals("Assignment") || !association_id.equals(assignmentId))
 				continue;
 
-			// start to create Assessment ------
+			//6.2 start to create Assessment ------
 			Assessment assessment = new Assessment();
 			assessment.setRubric(rubric);
 			assessment.setAssessmentGroup(assessmentGroup);
@@ -853,7 +861,7 @@ public class CanvasRestController {
 
 			assessment = assessmentDao.saveAssessment(assessment);
 
-			// get ratings and add it under this assessment
+			//6.3 get ratings and add it under this assessment
 			JSONArray ratingsArray = (JSONArray) assessmentJson.get("data");
 			List<Criterion> criteria = rubric.getCriteria();
 			List<Comment> comments = new ArrayList<>();
@@ -876,44 +884,41 @@ public class CanvasRestController {
 			assessment.setComments(comments);
 			assessment = assessmentDao.saveAssessment(assessment);
 
-			// if artifact type is Submission, see if we can download files of assessment
-			if (assessmentJson.get("artifact_type").toString().equals("Submission")) {
+			//6.4 if artifact type is Submission, download files of assessment
+			if (assessmentJson.get("artifact_type").toString().equals("Submission") && submissions!=null) {
 				String artifact_id = assessmentJson.get("artifact_id").toString();
 
-				// call get Submissions of this assignment
-				api = canvasURL + "courses/" + cid + "/assignments/" + assignmentId + "/submissions";
-				String sub_response = canvasGETHelper(api, token);
-				// find submission which has id == artifact_id
-				if (sub_response.length() > 0) {
-					JSONArray submissions = (JSONArray) parser.parse(sub_response);
-					for (int j = 0; j < submissions.size(); j++) {
-						JSONObject submission = (JSONObject) parser.parse(submissions.get(j).toString());
-						if (submission.get("id").toString().equals(artifact_id)) {
-							if (submission.get("attachments") != null) {
-								JSONArray attachments = (JSONArray) parser
-										.parse(submission.get("attachments").toString());
-								List<Artifact> artifacts = new ArrayList<>();
-								for (int k = 0; k < attachments.size(); k++) {
-									JSONObject attachment = (JSONObject) parser.parse(attachments.get(k).toString());
-									Artifact artifact = new Artifact();
-									String downloadUrl = attachment.get("url").toString();
-									String attId = attachment.get("id").toString();
-									String fileName = attId + "-" + attachment.get("display_name").toString(); // filename
-									artifact.setAssessment(assessment);
-									artifact.setName(fileName);
-									artifact.setPath(assessmentGroup.getId() + "");
-									artifact.setType("Submission");
-									artifact.setContentType(attachment.get("content-type").toString());
-									if (downloadFile(downloadUrl, artifact) >= 0) {
-										artifact = artifactDao.saveArtifact(artifact);
-										artifacts.add(artifact);
-									}
-								}
-								assessment.setArtifacts(artifacts);
+				//6.5 find submission whose id == artifact_id
+				for (int j = 0; j < submissions.size(); j++) {
+					JSONObject submission = (JSONObject) parser.parse(submissions.get(j).toString());
+					//6.5.1 ignore if the submission is not the one ...
+					if(!submission.get("id").toString().equals(artifact_id))
+						continue;
+					//find the current assessment's submission
+					if (submission.get("attachments") != null) {
+						//attachments will be an array whether it contains one or more files
+						JSONArray attachments = (JSONArray) parser.parse(submission.get("attachments").toString());
+						List<Artifact> artifacts = new ArrayList<>();
+						//6.5.2 traverses all the attachments in this submission
+						for (int k = 0; k < attachments.size(); k++) {
+							JSONObject attachment = (JSONObject) parser.parse(attachments.get(k).toString());
+							Artifact artifact = new Artifact();
+							String downloadUrl = attachment.get("url").toString();
+							String attId = attachment.get("id").toString();
+							String fileName = attId + "-" + attachment.get("display_name").toString(); // filename
+							artifact.setAssessment(assessment);
+							artifact.setName(fileName);
+							artifact.setPath(assessmentGroup.getId() + "");
+							artifact.setType("Submission");
+							artifact.setContentType(attachment.get("content-type").toString());
+							if (downloadFile(downloadUrl, artifact) >= 0) {
+								artifact = artifactDao.saveArtifact(artifact);
+								artifacts.add(artifact);
 							}
-							break;
 						}
+						assessment.setArtifacts(artifacts);
 					}
+					break;
 				}
 
 			}
