@@ -90,13 +90,13 @@ public class CanvasRestController {
 			prop.load(input);
 			url = prop.getProperty(name);
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			System.out.println(ex.getMessage());
 		}
 		return url;
 	}
 
 	// get sub from access_token
-	private String getSub(HttpServletRequest request) throws ParseException {
+	private String getSub(HttpServletRequest request) {
 		if (request.getHeader("Authorization") == null || request.getHeader("Authorization").length() == 0)
 			return "";
 		String token = request.getHeader("Authorization").split(" ")[1]; // get jwt from header
@@ -105,8 +105,14 @@ public class CanvasRestController {
 		String payload = new String(base64Url.decode(encodedPayload));
 
 		JSONParser parser = new JSONParser();
-		JSONObject claimsObj = (JSONObject) parser.parse(payload);
-		return claimsObj.get("sub").toString();
+		JSONObject claimsObj;
+		try {
+			claimsObj = (JSONObject) parser.parse(payload);
+			return claimsObj.get("sub").toString();
+		} catch (ParseException e) {
+			System.out.println("not able to convert claims to json: "+e.getMessage());
+		}
+		return "";
 	}
 
 	// canvas calling helper only for GET
@@ -636,9 +642,21 @@ public class CanvasRestController {
 					JSONObject user = (JSONObject) parser.parse(userArr.get(j).toString());
 					userIds.add(user.get("id").toString());
 				}
-				// 4. traverse all users and assign peer reviews to the other users in this same
-				// group (i.e., userId in userIds)
-				for (int t = 0; t < userIds.size(); t++) {
+				// 4. traverse all users and assign peer_reviews to the other users in the same group 
+				//i.e., traverse all user id in userIds
+				int count = 0;
+				if(userIds.size()>0)
+				{
+					while(userMap.size()==0 && count++<60)
+					{
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+				for (int t = 0; t < userIds.size(); t++) {	
 					String userId = userIds.get(t);
 					for (int s = 0; s < userIds.size(); s++) {
 						if (t == s)
@@ -657,6 +675,8 @@ public class CanvasRestController {
 	// POST|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:submission_id/peer_reviews
 	private void assignPeerReviewHelper(String canvasURL, long courseId, String assignmentId, String submissionId,
 			String userId, String token) {
+		if(submissionId==null)
+			throw new AccessDeniedException("failed to assign peer reviews");
 		String api = canvasURL + "courses/" + courseId + "/assignments/" + assignmentId + "/submissions/" + submissionId
 				+ "/peer_reviews";
 		JSONObject object = new JSONObject();
