@@ -60,9 +60,9 @@ public class CanvasController {
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
-		if (dkID.length() == 0 || dkKey.length() == 0)
+		if (dkID.length() == 0 || dkKey.length() == 0 || code.length()==0)
 			return "";
-
+		
 		String canvasURL = readProp("canvas.url");
 		// call Canvas POST API to get Token
 		String token = "";
@@ -82,10 +82,6 @@ public class CanvasController {
 			jsonObj.put("code", code);
 			
 			String jsonInputString = jsonObj.toString();
-//			String jsonInputString = "{ \"grant_type\": \"authorization_code\"," + " \"client_id\":" + dkID + ","
-//					+ " \"client_secret\": \"" + dkKey + "\","
-//					+ " \"redirect_uri\": \"https://alice.cysun.org/alice-rubrics/canvas/oauth_callback\","
-//					+ " \"code\": \"" + code + "\"" + " } ";
 
 			OutputStream os = conn.getOutputStream();
 			os.write(jsonInputString.getBytes());
@@ -110,7 +106,7 @@ public class CanvasController {
 
 			in.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("failed to get access_token from Canvas: "+e.getMessage());
 		}
 		model.addAttribute("token", token);
 		return "oauth_callback";
