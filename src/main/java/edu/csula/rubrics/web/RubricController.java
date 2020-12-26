@@ -471,13 +471,13 @@ public class RubricController {
 		return criterionDao.getAllCriteriaByTag(tagvalue);
 	}
 
-	// search tag
+	// search tags
 	@GetMapping("/tag/search/{text}")
-	public List<Tag> searchTag(@RequestParam String text) {
-		List<Tag> tag = null;
+	public List<Tag> searchTags(@RequestParam String text) {
+		List<Tag> tags = null;
 		if (text != null)
-			tag = criterionDao.searchTag(text);
+			tags = criterionDao.searchTag(text);
 
-		return tag;
+		return tags;
 	}
 }

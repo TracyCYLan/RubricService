@@ -118,7 +118,7 @@
        rubric_id bigint not null,
         criterion_id bigint not null,
         criterion_order integer not null,
-        primary key (rubric_id, criterion_order)
+        primary key (rubric_id, criterion_id)
     ) engine=InnoDB;
 
     create table rubrics (
